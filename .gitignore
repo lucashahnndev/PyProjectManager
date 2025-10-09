@@ -2,6 +2,8 @@
 projects.csv
 python_versions.csv
 *.csv
+/*.csv
+*/.csv
 
 # Pasta de Logs
 LOGS/
