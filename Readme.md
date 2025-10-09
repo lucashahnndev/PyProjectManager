@@ -20,7 +20,7 @@ Cansado de gerenciar manualmente ambientes virtuais, diferentes versões do Pyth
 Para instalar e configurar o `pyproj` para uso global, abra um terminal (CMD ou PowerShell) e cole o comando abaixo. Ele irá clonar o projeto e adicioná-lo automaticamente ao PATH do seu sistema.
 
 ```cmd
-git clone [https://github.com/lucashahnndev/PyProjectManager.git](https://github.com/lucashahnndev/PyProjectManager.git) && cd PyProjectManager && setx PATH "%PATH%;%cd%"
+git clone https://github.com/lucashahnndev/PyProjectManager.git && cd PyProjectManager && setx PATH "%PATH%;%cd%"
 ```
 
 **Importante**: Após a execução do comando, **feche e abra o terminal novamente** para que as alterações entrem em vigor.
