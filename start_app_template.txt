@@ -1,0 +1,152 @@
+@echo off
+setlocal enabledelayedexpansion
+TITLE Python Project Bootstrap
+
+REM ========================================================
+REM CONFIG FILE PATH
+REM ========================================================
+set CONFIG_FILE=project_config.ini
+
+REM ========================================================
+REM CHECK IF NEED EDIT
+REM ========================================================
+if "%~1"=="--edit" (
+    del "%CONFIG_FILE%" >nul 2>nul
+    echo Reconfigurando o ambiente...
+)
+
+REM ========================================================
+REM IF CONFIG EXISTS, LOAD AND SKIP SETUP
+REM ========================================================
+if exist "%CONFIG_FILE%" (
+    for /f "tokens=1,2 delims==" %%a in (%CONFIG_FILE%) do (
+        set "%%a=%%b"
+    )
+    goto RUN_PROJECT
+)
+
+echo =======================================================
+echo Configuracao inicial do ambiente Python
+echo =======================================================
+
+REM ========================================================
+REM 1. LISTAR INSTALACOES PYTHON DISPONIVEIS
+REM ========================================================
+echo.
+echo Detectando instalacoes Python...
+for /f "tokens=2 delims=: " %%A in ('py -0p 2^>nul') do (
+    set /a count+=1
+    set "pyver[!count!]=%%A"
+)
+if not defined count (
+    echo Nenhum Python encontrado. Instale o Python com o launcher ^(py^) habilitado.
+    pause
+    exit /b
+)
+
+echo.
+echo Pythons encontrados:
+for /l %%i in (1,1,%count%) do (
+    echo   %%i^) !pyver[%%i]!
+)
+
+set /p choice="Escolha o Python a usar [1-%count%]: "
+set "PYTHON_PATH=!pyver[%choice%]!"
+
+REM ========================================================
+REM 2. DEFINIR DIRETORIO DE EXECUCAO
+REM ========================================================
+echo.
+echo Diretorio atual: %cd%
+set /p use_current="Usar este diretorio? (S/N): "
+if /i "%use_current%"=="N" (
+    set /p EXEC_DIR="Informe o diretorio completo: "
+) else (
+    set "EXEC_DIR=%cd%"
+)
+
+REM ========================================================
+REM 3. USAR AMBIENTE VIRTUAL?
+REM ========================================================
+echo.
+set /p use_venv="Deseja usar ambiente virtual (venv)? (S/N): "
+
+REM ========================================================
+REM 4. DEPENDENCIAS
+REM ========================================================
+echo.
+if exist "%EXEC_DIR%\requirements.txt" (
+    echo Arquivo requirements.txt encontrado.
+    set /p install_mode="Instalar dependencias: [1] Sempre [2] Apenas 1 vez (1/2): "
+) else (
+    set "install_mode=0"
+)
+
+REM ========================================================
+REM 5. COMANDO FINAL
+REM ========================================================
+echo.
+set /p final_cmd="Digite o comando Python a executar ao final (ex: python -m uvicorn app.main_api:app --reload): "
+
+REM ========================================================
+REM SALVAR CONFIG
+REM ========================================================
+(
+    echo PYTHON_PATH=%PYTHON_PATH%
+    echo EXEC_DIR=%EXEC_DIR%
+    echo USE_VENV=%use_venv%
+    echo INSTALL_MODE=%install_mode%
+    echo FINAL_CMD=%final_cmd%
+) > "%CONFIG_FILE%"
+
+echo.
+echo Configuracao salva em %CONFIG_FILE%.
+echo =======================================================
+pause
+
+:RUN_PROJECT
+REM ========================================================
+REM EXECUCAO PRINCIPAL
+REM ========================================================
+cd /d "%EXEC_DIR%"
+echo Diretorio de execucao: %cd%
+echo Usando Python: %PYTHON_PATH%
+
+REM --------------------------------------------------------
+REM CRIAR OU ATIVAR VENV
+REM --------------------------------------------------------
+if /i "%USE_VENV%"=="S" (
+    if not exist "venv" (
+        echo Criando ambiente virtual...
+        "%PYTHON_PATH%" -m venv venv
+    )
+    call "venv\Scripts\activate.bat"
+)
+
+REM --------------------------------------------------------
+REM INSTALAR DEPENDENCIAS (CONFORME MODO)
+REM --------------------------------------------------------
+if exist "requirements.txt" (
+    if "%INSTALL_MODE%"=="1" (
+        echo Instalando dependencias sempre...
+        pip install -r requirements.txt
+    ) else if "%INSTALL_MODE%"=="2" (
+        if not exist ".deps_installed.flag" (
+            echo Instalando dependencias pela primeira vez...
+            pip install -r requirements.txt
+            echo ok > ".deps_installed.flag"
+        )
+    )
+)
+
+REM --------------------------------------------------------
+REM EXECUTAR COMANDO FINAL
+REM --------------------------------------------------------
+echo.
+echo =======================================================
+echo Executando comando final:
+echo %FINAL_CMD%
+echo =======================================================
+%FINAL_CMD%
+
+endlocal

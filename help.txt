@@ -1,0 +1,46 @@
+================================================================================
+                         PYTHON PROJECT MANAGER
+================================================================================
+
+Uso Geral: pyproj.bat <comando> [argumentos...]
+
+--------------------------------------------------------------------------------
+> GERENCIAMENTO DE PROJETOS
+--------------------------------------------------------------------------------
+
+/list                 Lista todos os projetos configurados (ID e Nome).
+/view <id_ou_nome>    Exibe todas as informações detalhadas de um projeto.
+/edit <id_ou_nome>    Permite editar as configurações de um projeto.
+/remove <id_ou_nome>  Remove um projeto do registro do sistema (não apaga os arquivos).
+/clear                ATENÇÃO: Remove TODOS os projetos do registro. Ação irreversível.
+
+--------------------------------------------------------------------------------
+> EXECUÇÃO E INTERAÇÃO
+--------------------------------------------------------------------------------
+
+/start <id_ou_nome>   Inicia o projeto, ativando a venv e executando o comando principal.
+/prompt <id_ou_nome>  Abre um terminal (CMD) com o ambiente virtual do projeto já ativado.
+/py_prompt <id_ou_nome> Inicia o interpretador Python interativo no contexto da venv.
+/open_dir <id_ou_nome>  Abre o diretório raiz do projeto no Windows Explorer.
+
+--------------------------------------------------------------------------------
+> GERENCIAMENTO DE AMBIENTE E DEPENDÊNCIAS
+--------------------------------------------------------------------------------
+
+/rebuild <id_ou_nome>       Recria o ambiente virtual (venv) do projeto do zero.
+/install_dep <id_ou_nome>   Força a reinstalação das dependências do requirements.txt.
+/add_python <caminho>     Registra manualmente um novo executável do Python no sistema.
+/install_python <versao>    Baixa e instala uma versão específica do Python no sistema.
+
+  Argumentos para /install_python:
+    <versao>      - Obrigatório. Versão a ser instalada (ex: 3.11.9).
+    /allusers     - Opcional. '1' para todos os usuários, '0' para o atual.
+    /target_dir   - Opcional. Caminho de instalação (ex: C:\Python311).
+
+--------------------------------------------------------------------------------
+> AJUDA
+--------------------------------------------------------------------------------
+
+/help, /?             Mostra esta tela de ajuda detalhada.
+
+================================================================================
