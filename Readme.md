@@ -1,4 +1,3 @@
-/*
 
 # Python Project Manager (`pyproj`)
 
@@ -35,54 +34,59 @@ git clone [https://github.com/seu-usuario/python-project-manager.git](https://gi
 
 **Opção B: Download Manual**
 
-1. Vá para a página do repositório no GitHub.
-2. Clique em `Code` > `Download ZIP`.
-3. Extraia o arquivo ZIP para uma pasta de sua preferência (ex: `C:\tools\pyproj`).
+1.  Vá para a página do repositório no GitHub.
+2.  Clique em `Code` > `Download ZIP`.
+3.  Extraia o arquivo ZIP para uma pasta de sua preferência (ex: `C:\tools\pyproj`).
 
 #### Etapa 2: Adicionar ao PATH do Windows
 
 Para usar o comando `pyproj.bat` de qualquer local no seu terminal, você precisa adicionar a pasta onde salvou os arquivos ao PATH do seu sistema.
 
-1. Abra um **novo** terminal (CMD ou PowerShell).
-2. Execute o comando abaixo, substituindo `"C:\caminho\para\o\pyproj"` pelo caminho real da pasta que você criou na Etapa 1.
+1.  Abra um **novo** terminal (CMD ou PowerShell).
+2.  Execute o comando abaixo, substituindo `"C:\caminho\para\o\pyproj"` pelo caminho real da pasta que você criou na Etapa 1.
 
-   ```cmd
-   setx PATH "%PATH%;C:\caminho\para\o\pyproj"
-   ```
-3. **Importante**: Feche e abra seu terminal novamente para que as alterações entrem em vigor.
+    ```cmd
+    setx PATH "%PATH%;C:\caminho\para\o\pyproj"
+    ```
+
+3.  **Importante**: Feche e abra seu terminal novamente para que as alterações entrem em vigor.
 
 Agora você pode usar o comando `pyproj` de qualquer diretório!
 
 ## Guia Rápido (Quick Start)
 
-1. **Navegue até a pasta de um projeto Python existente**:
+1.  **Navegue até a pasta de um projeto Python existente**:
 
-   ```cmd
-   cd C:\caminho\para\meu-projeto-python
-   ```
-2. **Inicie a configuração**:
-   Execute `pyproj.bat` sem argumentos. Como não há um projeto configurado neste diretório, o assistente interativo será iniciado.
-3. **Siga o Assistente**:
+    ```cmd
+    cd C:\caminho\para\meu-projeto-python
+    ```
 
-   * Dê um nome ao projeto (ex: `meu-projeto-api`).
-   * Escolha uma das versões do Python detectadas.
-   * Decida se deseja usar um ambiente virtual (`venv`).
-   * Configure o modo de instalação de dependências.
-   * Defina o comando de execução principal (ex: `python main.py`).
-4. **Execute seu projeto de qualquer lugar**:
-   Após a configuração, você pode ir para qualquer outro diretório e iniciar seu projeto pelo nome ou ID.
+2.  **Inicie a configuração**:
+    Execute `pyproj.bat` sem argumentos. Como não há um projeto configurado neste diretório, o assistente interativo será iniciado.
 
-   ```cmd
-   pyproj /start meu-projeto-api
-   ```
-5. **Abra um terminal com o venv ativado**:
-   Precisa instalar uma nova biblioteca ou rodar um comando específico?
+3.  **Siga o Assistente**:
 
-   ```cmd
-   pyproj /prompt meu-projeto-api
-   ```
+    * Dê um nome ao projeto (ex: `meu-projeto-api`).
+    * Escolha uma das versões do Python detectadas.
+    * Decida se deseja usar um ambiente virtual (`venv`).
+    * Configure o modo de instalação de dependências.
+    * Defina o comando de execução principal (ex: `python main.py`).
 
-   Isso abrirá um novo CMD com o ambiente virtual já ativado e pronto para uso.
+4.  **Execute seu projeto de qualquer lugar**:
+    Após a configuração, você pode ir para qualquer outro diretório e iniciar seu projeto pelo nome ou ID.
+
+    ```cmd
+    pyproj /start meu-projeto-api
+    ```
+
+5.  **Abra um terminal com o venv ativado**:
+    Precisa instalar uma nova biblioteca ou rodar um comando específico?
+
+    ```cmd
+    pyproj /prompt meu-projeto-api
+    ```
+
+    Isso abrirá um novo CMD com o ambiente virtual já ativado e pronto para uso.
 
 ## Referência de Comandos
 
@@ -125,5 +129,3 @@ Contribuições são muito bem-vindas! Se você tiver ideias para novas funciona
 ## Licença
 
 Este projeto está licenciado sob a **Licença MIT**. Veja o arquivo `LICENSE` para mais detalhes.
-
-*/
