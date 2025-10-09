@@ -1,6 +1,7 @@
 # Ficheiros gerados pelo PyProj
 projects.csv
 python_versions.csv
+*.csv
 
 # Pasta de Logs
 LOGS/
