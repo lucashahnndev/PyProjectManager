@@ -1,9 +1,9 @@
 /*
-# Python Project Manager (`pyproj`)
+# Python Project Manager (`pypm`)
 
 Uma ferramenta de linha de comando (CLI) poderosa para centralizar, automatizar e simplificar o gerenciamento de projetos Python no ambiente Windows.
 
-Cansado de gerenciar manualmente ambientes virtuais, diferentes versões do Python e scripts de inicialização para cada projeto? O `pyproj` resolve isso criando um registro central para todos os seus projetos, permitindo que você os configure, execute e interaja com eles de qualquer lugar do seu terminal.
+Cansado de gerenciar manualmente ambientes virtuais, diferentes versões do Python e scripts de inicialização para cada projeto? O `pypm` resolve isso criando um registro central para todos os seus projetos, permitindo que você os configure, execute e interaja com eles de qualquer lugar do seu terminal.
 
 ## Funcionalidades Principais
 
@@ -17,7 +17,7 @@ Cansado de gerenciar manualmente ambientes virtuais, diferentes versões do Pyth
 
 ## Instalação Rápida
 
-Para instalar e configurar o `pyproj` para uso global, abra um terminal (CMD ou PowerShell) e cole o comando abaixo. Ele irá clonar o projeto e adicioná-lo automaticamente ao PATH do seu sistema.
+Para instalar e configurar o `pypm` para uso global, abra um terminal (CMD ou PowerShell) e cole o comando abaixo. Ele irá clonar o projeto e adicioná-lo automaticamente ao PATH do seu sistema.
 
 ```cmd
 git clone https://github.com/lucashahnndev/PyProjectManager.git && cd PyProjectManager && setx PATH "%PATH%;%cd%"
@@ -25,7 +25,7 @@ git clone https://github.com/lucashahnndev/PyProjectManager.git && cd PyProjectM
 
 **Importante**: Após a execução do comando, **feche e abra o terminal novamente** para que as alterações entrem em vigor.
 
-Agora você pode usar o comando `pyproj` de qualquer diretório!
+Agora você pode usar o comando `pypm` de qualquer diretório!
 
 ## Guia Rápido (Quick Start)
 
@@ -35,7 +35,7 @@ Agora você pode usar o comando `pyproj` de qualquer diretório!
     ```
 
 2.  **Inicie a configuração**:
-    Execute `pyproj.bat` sem argumentos. Como não há um projeto configurado neste diretório, o assistente interativo será iniciado.
+    Execute `pypm.bat` sem argumentos. Como não há um projeto configurado neste diretório, o assistente interativo será iniciado.
 
 3.  **Siga o Assistente**:
     * Dê um nome ao projeto (ex: `meu-projeto-api`).
@@ -47,19 +47,19 @@ Agora você pode usar o comando `pyproj` de qualquer diretório!
 4.  **Execute seu projeto de qualquer lugar**:
     Após a configuração, você pode ir para qualquer outro diretório e iniciar seu projeto pelo nome ou ID.
     ```cmd
-    pyproj /start meu-projeto-api
+    pypm /start meu-projeto-api
     ```
 
 5.  **Abra um terminal com o venv ativado**:
     Precisa instalar uma nova biblioteca ou rodar um comando específico?
     ```cmd
-    pyproj /prompt meu-projeto-api
+    pypm /prompt meu-projeto-api
     ```
     Isso abrirá um novo CMD com o ambiente virtual já ativado e pronto para uso.
 
 ## Referência de Comandos
 
-Todos os comandos disponíveis podem ser visualizados com `pyproj /help`.
+Todos os comandos disponíveis podem ser visualizados com `pypm /help`.
 
 ---
 #### **Gerenciamento de Projetos**
@@ -84,7 +84,7 @@ Todos os comandos disponíveis podem ser visualizados com `pyproj /help`.
 ---
 ## Como Funciona
 
-O `pyproj` utiliza um arquivo `projects.csv` na sua pasta de instalação para armazenar os metadados de cada projeto. Ao configurar um projeto, ele cria um `project_config.ini` e um script `start_app.bat` local no diretório do seu projeto. Toda a lógica de execução pesada (limpeza de ambiente, ativação de venv, etc.) é centralizada no `start_app_core.bat` para evitar duplicação de código.
+O `pypm` utiliza um arquivo `projects.csv` na sua pasta de instalação para armazenar os metadados de cada projeto. Ao configurar um projeto, ele cria um `project_config.ini` e um script `start_app.bat` local no diretório do seu projeto. Toda a lógica de execução pesada (limpeza de ambiente, ativação de venv, etc.) é centralizada no `start_app_core.bat` para evitar duplicação de código.
 
 ## Contribuições
 
