@@ -42,7 +42,7 @@ goto :MAIN
 :: --------------------------------------------------------
 :: Arquivo de configuração
 :: --------------------------------------------------------
-set "CONFIG_FILE=project_config.ini"
+set "CONFIG_FILE=pypm.ini"
 
 if not exist "%CONFIG_FILE%" (
     echo ERRO: Arquivo de configuracao %CONFIG_FILE% nao encontrado.
@@ -171,6 +171,9 @@ exit /b
 :: 4. INSTALAR DEPENDENCIAS (CORRIGIDO)
 :: --------------------------------------------------------
 :INSTALL_DEP
+:: Apaga o log antigo para começar um novo
+if exist "installation_log.txt" ( del "installation_log.txt" )
+set installed=false
 if exist "requirements.txt" (
     if /i "%~1"=="/install_dep" (
         if "%INSTALL_MODE%" neq "3" (
@@ -179,7 +182,14 @@ if exist "requirements.txt" (
                 echo.
                 echo +++ Instalando/Atualizando: "%%p" +++
                 pip install --no-cache-dir --force-reinstall --upgrade "%%p"
+
+                if !ERRORLEVEL! equ 0 (
+                    echo [SUCESSO] - %%p >> installation_log.txt
+                ) else (
+                    echo [FALHA]   - %%p >> installation_log.txt
+                )
             )
+            set installed=true
         )
     ) else (
         if "%INSTALL_MODE%"=="1" (
@@ -188,7 +198,13 @@ if exist "requirements.txt" (
                 echo.
                 echo +++ Instalando: "%%p" +++
                 pip install "%%p"
+                    if !ERRORLEVEL! equ 0 (
+                    echo [SUCESSO] - %%p >> installation_log.txt
+                ) else (
+                    echo [FALHA]   - %%p >> installation_log.txt
+                )
             )
+            set installed=true
         ) else (
             if "%INSTALL_MODE%"=="2" (
                 if /i "%deps_installed%"=="False"  (
@@ -197,12 +213,29 @@ if exist "requirements.txt" (
                         echo.
                         echo +++ Instalando: "%%p" +++
                         pip install --no-cache-dir --force-reinstall --upgrade "%%p"
+                        if !ERRORLEVEL! equ 0 (
+                            echo [SUCESSO] - %%p >> installation_log.txt
+                        ) else (
+                            echo [FALHA]   - %%p >> installation_log.txt
+                        )
                     )
-                    echo deps_installed=True > ".project_config.ini"
+                    set installed=true
                 )
             )
         )
     )
+    if /i !installed!==true (
+                    echo PROJECT_NAME=!PROJECT_NAME!
+                    echo PYTHON_PATH=!PYTHON_PATH!
+                    echo EXEC_DIR=!EXEC_DIR!
+                    echo PROJECT_DIR=!PROJECT_DIR!
+                    echo USE_VENV=!USE_VENV!
+                    echo INSTALL_MODE=!INSTALL_MODE!
+                    echo FINAL_CMD=!FINAL_CMD!
+                    echo USE_LOG_FILE=!USE_LOG_FILE!
+                    echo USE_LOG_ROTATION=!USE_LOG_ROTATION!
+                    echo deps_installed=True
+    )> ".project_config.ini"
 ) else (
     echo Nenhum arquivo requirements.txt encontrado, pulando instalacao.
 )

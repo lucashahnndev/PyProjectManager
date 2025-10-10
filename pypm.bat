@@ -6,7 +6,7 @@ TITLE Python Project Manager
 :: Arquivos de controle
 :: -------------------------------------
 set "DB_FILE=%~dp0projects.csv"
-set "CONFIG_FILE=project_config.ini"
+set "CONFIG_FILE=pypm.ini"
 set "START_SCRIPT=start_app.bat"
 set "CORE_SCRIPT=start_app_core.bat"
 
