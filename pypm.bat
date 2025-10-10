@@ -188,7 +188,7 @@ echo EXEC_DIR:          %EXEC_DIR%
 echo PROJECT_DIR:       %PROJECT_DIR%
 echo USE_VENV:          %use_venv%
 echo INSTALL_MODE:      %install_mode%
-echo FINAL_CMD:         %final_cmd%
+echo FINAL_CMD:         !final_cmd!
 echo USE_LOG_FILE:      %use_log_file%
 echo USE_LOG_ROTATION:  %use_log_rotation%
 echo ------------------------------------------
@@ -209,7 +209,7 @@ echo [1] - Python:             %PYTHON_PATH%
 echo [2] - Diretorio:          %EXEC_DIR%
 echo [3] - Ambiente virtual:   %use_venv%
 echo [4] - Modo de instalacao: %install_mode%
-echo [5] - Comando final:      %final_cmd%
+echo [5] - Comando final:      !final_cmd!
 echo [6] - Configurar Log:     Log [%use_log_file%], Rotacao [%use_log_rotation%]
 echo ------------------------------------------
 echo [7] - Salvar e Sair
@@ -457,7 +457,7 @@ goto :Edit_Menu
 :: ----------------------------
 :Edit_Final_Cmd
 echo.
-echo Comando final atual: %final_cmd%
+echo Comando final atual: !final_cmd!
 set /p final_cmd="Digite o comando a executar (ex: python main.py): "
 if defined COMMAND goto :Edit_Menu
 goto :SAVE
@@ -475,7 +475,7 @@ echo Salvando nova configuracao...
     echo PROJECT_DIR=%EXEC_DIR%
     echo USE_VENV=%use_venv%
     echo INSTALL_MODE=%install_mode%
-    echo FINAL_CMD=%final_cmd%
+    echo FINAL_CMD=!final_cmd!
     echo USE_LOG_FILE=%use_log_file%
     echo USE_LOG_ROTATION=%use_log_rotation%
     echo deps_installed=False
@@ -527,7 +527,7 @@ if defined COMMAND (
     >"%DB_FILE%.tmp" (
         for /f "usebackq delims=" %%a in ("%DB_FILE%") do (
             if "!id!"=="%found_id%" (
-                echo %PROJECT_NAME%;%NOW%;%EXEC_DIR%;%PYTHON_PATH%;%PROJECT_DIR%;%use_venv%;%install_mode%;%final_cmd%;%use_log_file%;%use_log_rotation%
+                echo %PROJECT_NAME%;%NOW%;%EXEC_DIR%;%PYTHON_PATH%;%PROJECT_DIR%;%use_venv%;%install_mode%;!final_cmd!;%use_log_file%;%use_log_rotation%
             ) else (
                 echo %%a
             )
@@ -536,7 +536,7 @@ if defined COMMAND (
     )
     move /y "%DB_FILE%.tmp" "%DB_FILE%" >nul
 ) else (
-    >>"%DB_FILE%" echo %PROJECT_NAME%;%NOW%;%EXEC_DIR%;%PYTHON_PATH%;%EXEC_DIR%;%use_venv%;%install_mode%;%final_cmd%;%use_log_file%;%use_log_rotation%
+    >>"%DB_FILE%" echo %PROJECT_NAME%;%NOW%;%EXEC_DIR%;%PYTHON_PATH%;%EXEC_DIR%;%use_venv%;%install_mode%;!final_cmd!;%use_log_file%;%use_log_rotation%
 )
 
 echo.
