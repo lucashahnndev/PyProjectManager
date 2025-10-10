@@ -372,9 +372,9 @@ if %choice% GTR %display_count% (
     goto :Edit_Python
 )
 
-:: --- Extrai o path da linha escolhida
-for /f "tokens=3" %%P in ("!display_line[%choice%]!") do (
-    set "PYTHON_PATH=%%P"
+:: --- Extrai o path da linha escolhida (CORRIGIDO)
+for /f "tokens=1,2,*" %%O in ("!display_line[%choice%]!") do (
+    set "PYTHON_PATH=%%Q"
 )
 
 endlocal & (
