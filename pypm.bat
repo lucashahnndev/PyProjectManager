@@ -349,7 +349,7 @@ set /a display_count=0
 if %count% gtr 0 (
     >"%TEMP%\py_list.tmp" (
         for /l %%i in (1,1,%count%) do (
-            echo !py_version[%%i]! -- !py_path[%%i]!
+            echo !py_version[%%i]!^|!py_path[%%i]!
         )
     )
     for /f "delims=" %%L in ('sort /r "%TEMP%\py_list.tmp"') do (
@@ -372,9 +372,9 @@ if %choice% GTR %display_count% (
     goto :Edit_Python
 )
 
-:: --- Extrai o path da linha escolhida (CORRIGIDO)
-for /f "tokens=1,2,*" %%O in ("!display_line[%choice%]!") do (
-    set "PYTHON_PATH=%%Q"
+:: --- Extrai o path da linha escolhida (CORRIGIDO E MAIS ROBUSTO)
+for /f "tokens=2 delims=|" %%P in ("!display_line[%choice%]!") do (
+    set "PYTHON_PATH=%%P"
 )
 
 endlocal & (
@@ -645,7 +645,7 @@ if exist "%PY_CACHE_FILE%" (
     )
 )
 echo Validando executavel...
-"%PYTHON_EXE_PATH%" --version > "%TEMP%\pyver.tmp" 2>&1
+"!PYTHON_EXE_PATH!" --version > "%TEMP%\pyver.tmp" 2>&1
 findstr /i /c:"Python" "%TEMP%\pyver.tmp" >nul
 if errorlevel 1 (
     echo ERRO: Nao foi possivel obter uma versao valida do Python.
