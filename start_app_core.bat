@@ -64,16 +64,16 @@ TITLE Project (%PROJECT_NAME%)
 :: --------------------------------------------------------
 echo.
 echo Verificando se o Python selecionado esta disponivel...
-"%PYTHON_PATH%" --version >nul 2>nul
+"!PYTHON_PATH!" --version >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 (
-    echo ERRO: Python nao encontrado em %PYTHON_PATH%.
+    echo ERRO: Python nao encontrado em "!PYTHON_PATH!".
     pause
     exit /b
 )
-set PATH=!path!;"%PYTHON_PATH%"
-!PYTHON_PATH! python -m ensurepip >nul 2>&1
+set PATH=!path!;"!PYTHON_PATH!"
+"!PYTHON_PATH!" python -m ensurepip >nul 2>&1
 pip install --upgrade pip setuptools wheel >nul 2>&1
-echo Python encontrado em %PYTHON_PATH%!
+echo Python encontrado em "!PYTHON_PATH!"!
 
 :: --------------------------------------------------------
 :: 2. DIRETORIO DE EXECUCAO
@@ -89,7 +89,7 @@ goto :venv
 if /i "%USE_VENV%"=="S" (
     if not exist "venv" (
         echo Criando ambiente virtual...
-        "%PYTHON_PATH%" -m venv venv
+        "!PYTHON_PATH!" -m venv venv
 
     )
     :: Antes de ativar, salvar PATH e Python do venv
