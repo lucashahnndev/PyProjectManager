@@ -1,3 +1,0 @@
-Name;Date;Exec_dir;Python_path;Project_dir;Use_venv;Install_mode;Final_cmd
-LPR_ANPR;09/10/2025 19:23:21;D:\projects\Video_analitico_2\video_analytics_project - Copia;C:\Users\gvsup\AppData\Local\Programs\Python\Python312\\python.exe;D:\projects\Video_analitico_2\video_analytics_project - Copia;s;1; python -m uvicorn app.main_api:app --reload;s;s
-pyproj;09/10/2025 15:52:50;C:\Users\gvsup;C:\Users\gvsup\ -V:3.10          C:\Users\gvsup\AppData\Local\Programs\Python\Python310\python.exe;C:\Users\gvsup;n;3;s;s;s
