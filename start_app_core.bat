@@ -90,6 +90,7 @@ if /i "%USE_VENV%"=="S" (
     if not exist "venv" (
         echo Criando ambiente virtual...
         "!PYTHON_PATH!" -m venv venv
+        "!PYTHON_PATH!" -m pip install --upgrade pip
 
     )
     :: Antes de ativar, salvar PATH e Python do venv
@@ -170,30 +171,70 @@ exit /b
 
 
 :: --------------------------------------------------------
-:: 4. INSTALAR DEPENDENCIAS
+:: 4. INSTALAR DEPENDENCIAS (VERSAO MELHORADA COM FOR)
 :: --------------------------------------------------------
 :INSTALL_DEP
 if exist "requirements.txt" (
+    REM Define variaveis para controlar a logica de instalacao
+    set "DO_INSTALL=false"
+    set "PIP_FLAGS="
+
     if "%~1"=="/install_dep" (
         if "%INSTALL_MODE%" neq "3" (
-            echo Forcando instalacao de dependencias...
-            pip install --no-cache-dir --force-reinstall --upgrade -r requirements.txt
+            echo Forcando instalacao de dependencias, uma por uma...
+            set "PIP_FLAGS=--no-cache-dir --force-reinstall --upgrade"
+            set "DO_INSTALL=true"
         )
     ) else (
-            if "%INSTALL_MODE%"=="1" (
-                echo Instalando dependencias sempre...
-                pip install -r requirements.txt
-            ) else if "%deps_installed%"=="2" (
-                if "%deps_installed%"=="False"  (
-                    echo Instalando dependencias pela primeira vez...
-                    pip install --no-cache-dir --force-reinstall --upgrade -r requirements.txt
-                    echo deps_installed=True > ".project_config.ini"
+        if "%INSTALL_MODE%"=="1" (
+            echo Instalando dependencias (modo: sempre), uma por uma...
+            set "PIP_FLAGS="
+            set "DO_INSTALL=true"
+        ) else if "%INSTALL_MODE%"=="2" (
+            if "%deps_installed%"=="False"  (
+                echo Instalando dependencias pela primeira vez, uma por uma...
+                set "PIP_FLAGS=--no-cache-dir --force-reinstall --upgrade"
+                set "DO_INSTALL=true"
+            )
+        )
+    )
+
+    REM Se uma das condicoes acima foi atendida, executa o laco de instalacao
+    if "!DO_INSTALL!"=="true" (
+        echo.
+        echo =======================================================
+        echo  Iniciando instalacao a partir de requirements.txt
+        echo =======================================================
+
+        for /f "usebackq delims=" %%a in ("requirements.txt") do (
+            REM Ignora linhas em branco ou que comecam com # (comentarios)
+            set "line=%%a"
+            set "first_char=!line:~0,1!"
+
+            if defined line if "!first_char!" neq "#" (
+                echo.
+                echo --- Instalando: "%%a" ---
+                pip install !PIP_FLAGS! "%%a"
+
+                REM Verifica se o pacote especifico falhou e avisa o usuario
+                if !errorlevel! neq 0 (
+                    echo [AVISO] Falha ao instalar "%%a". Continuando com o proximo...
                 )
             )
+        )
+
+        echo =======================================================
+        echo Instalacao de dependencias concluida.
+
+        REM Atualiza o status para nao instalar de novo no modo "primeira vez"
+        if "%INSTALL_MODE%"=="2" (
+            echo deps_installed=True > ".project_config.ini"
+        )
     )
 ) else (
     echo Nenhum arquivo requirements.txt encontrado, pulando instalacao.
 )
+
 if /i "%~1"=="/install_dep" (
     exit /b
 ) else (
@@ -208,7 +249,7 @@ if /i "%~1"=="/install_dep" (
 echo.
 echo =======================================================
 echo Executando comando final:
-echo %FINAL_CMD%
+echo !FINAL_CMD!
 echo =======================================================
 %FINAL_CMD%
 
