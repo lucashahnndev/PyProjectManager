@@ -167,68 +167,40 @@ start "%PROJECT_DIR%"
 exit /b
 
 
-
-
-
 :: --------------------------------------------------------
-:: 4. INSTALAR DEPENDENCIAS (VERSAO MELHORADA COM FOR)
+:: 4. INSTALAR DEPENDENCIAS (CORRIGIDO)
 :: --------------------------------------------------------
 :INSTALL_DEP
 if exist "requirements.txt" (
-    REM Define variaveis para controlar a logica de instalacao
-    set "DO_INSTALL=false"
-    set "PIP_FLAGS="
-
-    if "%~1"=="/install_dep" (
+    if /i "%~1"=="/install_dep" (
         if "%INSTALL_MODE%" neq "3" (
-            echo Forcando instalacao de dependencias, uma por uma...
-            set "PIP_FLAGS=--no-cache-dir --force-reinstall --upgrade"
-            set "DO_INSTALL=true"
+            echo Forcando a reinstalacao de todas as dependencias^...
+            for /f "usebackq delims=" %%p in ("requirements.txt") do (
+                echo.
+                echo +++ Instalando/Atualizando: "%%p" +++
+                pip install --no-cache-dir --force-reinstall --upgrade "%%p"
+            )
         )
     ) else (
         if "%INSTALL_MODE%"=="1" (
-            echo Instalando dependencias (modo: sempre), uma por uma...
-            set "PIP_FLAGS="
-            set "DO_INSTALL=true"
-        ) else if "%INSTALL_MODE%"=="2" (
-            if "%deps_installed%"=="False"  (
-                echo Instalando dependencias pela primeira vez, uma por uma...
-                set "PIP_FLAGS=--no-cache-dir --force-reinstall --upgrade"
-                set "DO_INSTALL=true"
-            )
-        )
-    )
-
-    REM Se uma das condicoes acima foi atendida, executa o laco de instalacao
-    if "!DO_INSTALL!"=="true" (
-        echo.
-        echo =======================================================
-        echo  Iniciando instalacao a partir de requirements.txt
-        echo =======================================================
-
-        for /f "usebackq delims=" %%a in ("requirements.txt") do (
-            REM Ignora linhas em branco ou que comecam com # (comentarios)
-            set "line=%%a"
-            set "first_char=!line:~0,1!"
-
-            if defined line if "!first_char!" neq "#" (
+            echo Verificando e instalando dependencias ^(^modo: Sempre^)^...
+            for /f "usebackq delims=" %%p in ("requirements.txt") do (
                 echo.
-                echo --- Instalando: "%%a" ---
-                pip install !PIP_FLAGS! "%%a"
-
-                REM Verifica se o pacote especifico falhou e avisa o usuario
-                if !errorlevel! neq 0 (
-                    echo [AVISO] Falha ao instalar "%%a". Continuando com o proximo...
+                echo +++ Instalando: "%%p" +++
+                pip install "%%p"
+            )
+        ) else (
+            if "%INSTALL_MODE%"=="2" (
+                if /i "%deps_installed%"=="False"  (
+                    echo Instalando dependencias pela primeira vez^...
+                    for /f "usebackq delims=" %%p in ("requirements.txt") do (
+                        echo.
+                        echo +++ Instalando: "%%p" +++
+                        pip install --no-cache-dir --force-reinstall --upgrade "%%p"
+                    )
+                    echo deps_installed=True > ".project_config.ini"
                 )
             )
-        )
-
-        echo =======================================================
-        echo Instalacao de dependencias concluida.
-
-        REM Atualiza o status para nao instalar de novo no modo "primeira vez"
-        if "%INSTALL_MODE%"=="2" (
-            echo deps_installed=True > ".project_config.ini"
         )
     )
 ) else (
@@ -254,3 +226,4 @@ echo =======================================================
 %FINAL_CMD%
 
 endlocal
+
