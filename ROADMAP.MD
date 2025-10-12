@@ -30,4 +30,15 @@ O gerenciamento de ambientes será a funcionalidade central, garantindo que um p
 
 * **Abstração da Versão do Python:** O `pypm.ini` não armazenará mais o caminho absoluto para o executável do Python. Em vez disso, ele guardará a **versão requerida** (ex: `python_version = "3.11.9"`).
 * **Provisionamento Automático de Python (Python-on-Demand):** Ao executar um projeto, o `pypm` lerá a versão do Python necessária. Se não a encontrar, ele usará sua própria funcionalidade para **baixar e instalar a versão exata automaticamente**.
-* **Importação Automática de Projetos:** Ao ser executado em um diretório com uma pasta `.pypm` não registrada, o `pypm` iniciará um fluxo de **importação automática**, registrando o projeto e
+* **Importação Automática de Projetos:** Ao ser executado em um diretório com uma pasta `.pypm` não registrada, o `pypm` iniciará um fluxo de **importação automática**, registrando o projeto e adaptando os caminhos para a nova máquina, tornando trivial a configuração de um projeto clonado do Git.
+* **Exportação/Importação Manual:** Comandos `pypm export` e `pypm import` serão implementados para permitir a fácil migração de projetos entre sistemas.
+
+## 5. Melhoria da Interface de Linha de Comando (CLI)
+*(Esta seção permanece a mesma)*
+
+* **Novo Padrão de Argumentos:** A sintaxe mudará para um formato mais familiar: `pypm <comando> [argumentos] --opcao <valor>`.
+* **Execução de Tarefas Arbitrárias:** Suporte para `pypm run <script.py>` (local) e `pypm <id> --run <script.py>` (remoto).
+* **Comandos de Conveniência:** `pypm shell` para ativar o ambiente no diretório atual e `pypm init` para iniciar a configuração.
+* **Criação de Atalhos (`.lnk`):** Comando `pypm <id> --create-shortcut` para gerar um lançador de fácil acesso.
+* **Gerenciamento de Dependências via CLI:** Comandos `pypm <id> --add <pacote>` e `--remove <pacote>` para interagir com o Poetry.
+
