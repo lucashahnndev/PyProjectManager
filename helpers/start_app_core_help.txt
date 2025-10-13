@@ -1,0 +1,70 @@
+============================================================================
+              ASSISTENTE DE AJUDA - PROJECT STARTER (`pypm`)
+============================================================================
+
+Este script e o motor de execucao para projetos pypm.  Ele automatiza a preparacao do
+ambiente Python e a execucao de comandos dentro do contexto correto do projeto.
+
+As principais responsabilidades do script sao:
+1. Limpar variaveis de ambiente para evitar conflitos. 
+2. Ler as configuracoes do projeto (`.pypm/pypm` e `.pypm/pypm.local`). 
+3. Garantir que a versao correta do Python esta sendo utilizada. 
+4. Preparar o ambiente de dependencias (venv). 
+5. Executar a acao final solicitada pelo utilizador. 
+
+----------------------------------------------------------------------------
+USO:
+    start_app [COMANDO] [ARGUMENTOS...]
+----------------------------------------------------------------------------
+
+COMANDOS DISPONIVEIS:
+
+  --help, -h, -?, /?
+    Exibe esta mensagem de ajuda. 
+
+  (nenhum comando)
+    Prepara o ambiente de dependencias (cria ou atualiza o venv, se
+    necessario) e encerra. E util para apenas deixar o ambiente pronto.
+
+  --shell
+    Ativa um shell (prompt de comando) com o ambiente virtual do projeto
+    ja ativado. Todas as bibliotecas do projeto estarao disponiveis
+    neste shell.
+
+  --rebuild
+    Forca a recriacao completa do ambiente virtual. O diretorio 'venv'
+    sera apagado e todas as dependencias listadas em 'requirements.txt'
+    serao reinstaladas.
+
+  --add-dep "<pacote>"
+    Adiciona um novo pacote ao projeto.  O script ira instalar o pacote no
+    ambiente virtual e atualizar o arquivo 'requirements.txt'
+    automaticamente.
+    Exemplo:
+        start_app --add-dep "requests==2.28.1"
+        start_app --add-dep "numpy"
+
+  --run <executavel> [argumentos...]
+    (Funcionalidade implicita) Executa um comando ou script dentro do
+    ambiente virtual ativado.
+    Exemplo:
+        start_app --run python my_script.py
+        start_app --run pytest
+
+============================================================================
+ERROS COMUNS:
+
+  - [ERRO] Ficheiro de configuracao do projeto (`<caminho>`) nao encontrado. 
+    Verifique se voce esta executando o script a partir do diretorio
+    raiz do seu projeto, onde a pasta '.pypm' esta localizada.
+
+  - [ERRO] Nao foi possivel obter um Python compativel com a versao <versao>. 
+    O `python_manager.bat` nao conseguiu encontrar ou instalar a versao
+    do Python especificada em seu arquivo de configuracao. Verifique
+    a configuracao 'PYTHON_VERSION'.
+
+  - [ERRO] Falha ao preparar o ambiente. 
+    Ocorreu um problema durante a instalacao de dependencias com o pip.
+    Execute com '--rebuild' para tentar uma reinstalacao limpa.
+
+============================================================================

@@ -5,9 +5,14 @@ atraves do pip. Nao e projetado para uso direto pelo utilizador.
 
 MODOS DE OPERACAO
 
+--ensure-env
+Modo "smart". Garante que o ambiente virtual existe e que as dependencias
+estao instaladas, com base na flag --deps-installed. Cria o venv e/ou
+instala as dependencias apenas se for necessario.
+
 --shell
 Abre um novo terminal (CMD) com o ambiente virtual ativado e pronto a usar.
-Opcionalmente, instala as dependencias na primeira criacao do venv.
+Cria o venv e instala as dependencias na primeira vez.
 
 --add-dep <pacote>
 Instala um novo pacote no ambiente virtual e adiciona-o ao ficheiro de
@@ -18,31 +23,30 @@ Desinstala um pacote do ambiente virtual e remove-o do ficheiro de
 dependencias, se especificado.
 
 --rebuild
-Apaga completamente o ambiente virtual e os caches (.pyc), e depois recria
-o ambiente e reinstala as dependencias do zero.
+Forca a reconstrucao completa do ambiente virtual e a reinstalacao de todas
+as dependencias.
 
 --help, -h
 Mostra esta tela de ajuda.
 
-PARAMETROS OBRIGATORIOS (para todos os modos)
+PARAMETROS
 
---python-exe, --py <caminho>
-Especifica o caminho completo para o python.exe que sera
-usado para criar e gerir o ambiente virtual.
+--python-exe <caminho>
+Obrigatorio. Especifica o caminho completo para o python.exe.
 
 --project-dir <caminho>
-Especifica o diretorio raiz do projeto onde as operacoes serao executadas.
+Obrigatorio. Especifica o diretorio raiz do projeto.
 
-PARAMETROS OPCIONAIS
+--venv <caminho>
+Opcional. Especifica o caminho para a pasta do ambiente virtual.
 
---venv <nome_pasta>
-Especifica o nome da pasta do ambiente virtual (ex: "venv").
-Se nao for fornecido, o script nao tentara criar ou ativar um venv.
+--deps-file <caminho>
+Opcional. Especifica o caminho para o ficheiro de dependencias.
 
---deps-file <caminho_ficheiro>
-Especifica o caminho para o ficheiro de dependencias (ex:
-"requirements.txt"). Usado para instalar pacotes na criacao do venv.
+--deps-installed <True|False>
+Usado pelo modo --ensure-env para decidir se as dependencias precisam
+de ser instaladas.
 
 --no-cache
-Usado com --rebuild, forca a limpeza do cache do pip antes de reinstalar
-as dependencias, garantindo um download limpo de todos os pacotes.
+Opcional. Usado com --rebuild ou na instalacao para forcar o pip a
+ignorar o seu cache de pacotes.

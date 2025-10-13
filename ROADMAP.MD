@@ -1,44 +1,55 @@
-# Roadmap do `pypm` v2.0: A Próxima Geração
+# Roadmap do `pypm` v2.0: A Proxima Geracao
 
-A versão 2.0 do **Python Project Manager (`pypm`)** marca uma evolução fundamental na sua arquitetura, migrando de um conjunto de scripts inteligentes para uma aplicação de linha de comando robusta, multiplataforma e escalável. A visão é consolidar o `pypm` como a ferramenta definitiva para orquestrar, provisionar e portabilizar ambientes de desenvolvimento Python completos.
+A versao 2.0 do **Python Project Manager (`pypm`)** marca uma evolucao fundamental na sua arquitetura, migrando de um conjunto de scripts inteligentes para uma aplicacao de linha de comando robusta, multiplataforma e escalavel. A visao e consolidar o `pypm` como uma **plataforma de automacao de tarefas** definitiva para orquestrar, provisionar e portabilizar ambientes de desenvolvimento Python completos.
 
 ## 1. Arquitetura: O Core Migra para Python
 
-A mudança mais significativa será a migração de toda a lógica de negócio, atualmente em scripts Batch, para um core modular escrito em Python.
+A mudanca mais significativa sera a migracao de toda a logica de negocio para um core modular escrito em Python.
 
-* **Lógica Central em Python:** Todas as operações — gerenciamento de projetos, interações com Poetry, manipulação de arquivos, lógica de banco de dados — serão reescritas em Python. Isso garantirá portabilidade, testabilidade e facilitará a manutenção e a adição de novas funcionalidades complexas.
-* **Scripts Shell como "Roteadores":** Os arquivos de shell (`pypm.bat`, `pypm.sh`) se tornarão "launchers" leves. Suas únicas responsabilidades serão encontrar um interpretador Python válido e passar todos os argumentos para o ponto de entrada da aplicação Python (ex: `python -m pypm.cli %*`).
-* **Persistência Escalável com SQLite:** O banco de dados de projetos, atualmente em `.csv`, será migrado para **SQLite**. Isso proporcionará maior robustez, performance e a capacidade de realizar consultas mais complexas, tudo isso mantendo a simplicidade de um único arquivo de banco de dados e sem adicionar dependências externas.
-* **Distribuição via PyPI:** O projeto será empacotado e distribuído no Python Package Index (PyPI). A instalação será padronizada para o comando `pip install python-project-manager`, tornando a ferramenta facilmente acessível a toda a comunidade Python.
+* **Logica Central em Python:** Todas as operacoes — gestao de projetos, interacoes com Poetry, manipulacao de ficheiros, logica de base de dados — serao reescritas em Python, garantindo portabilidade e manutenibilidade.
+* **Scripts Shell como "Roteadores":** Os ficheiros de shell (`pypm.bat`, `pypm.sh`) tornar-se-ao "launchers" leves, responsaveis por encontrar um Python valido e passar os comandos para o core da aplicacao.
+* **Persistencia Escalavel com SQLite:** O banco de dados de projetos sera migrado para **SQLite** para maior robustez e performance.
+* **Distribuicao via PyPI:** A instalacao sera padronizada para `pip install python-project-manager`.
 
-## 2. Core Engine: Adoção do Poetry como Padrão
-*(Esta seção permanece a mesma)*
+## 2. Core Engine: Adoção do Poetry como Padrao
 
-* **Instalação Sob Demanda:** O `pypm` não embarcará o Poetry. Em vez disso, na primeira execução, ele detectará um Python compatível no sistema (ou usará sua própria função para baixar um), e instalará uma versão *fixa* e testada do Poetry em um ambiente isolado.
-* **Padrão para Novos Projetos:** Todos os novos projetos configurados com `pypm` serão inicializados como projetos Poetry (`poetry init`).
-* **Conversor Automático:** Ao configurar um projeto existente que contenha um `requirements.txt`, o `pypm` oferecerá a conversão automática, importando as dependências para o `pyproject.toml` usando `poetry add`.
+O `pypm` adotara o **Poetry** como o motor padrao para uma gestao de dependencias robusta e builds reprodutiveis.
 
-## 3. Estrutura de Projeto Padronizada e Portátil
-*(Esta seção permanece a mesma)*
+* **Instalacao Sob Demanda:** O Poetry sera instalado automaticamente pelo `pypm` na sua primeira execucao, num ambiente isolado, garantindo consistencia.
+* **Padrao para Novos Projetos:** Todos os novos projetos serao inicializados como projetos Poetry.
+* **Conversor Automatico:** O `pypm` oferecera a conversao de ficheiros `requirements.txt` existentes para o formato do `pyproject.toml` na configuracao inicial.
 
-* **Centralização na Pasta `.pypm`:** Toda a infraestrutura do `pypm` (configuração, logs, ambiente virtual) será contida em uma única pasta `.pypm` para manter o diretório do projeto limpo.
-* **Estratégia de `.gitignore` Inteligente:** O `pypm` irá gerar um `.gitignore` que versiona arquivos de configuração essenciais (`pypm.ini`, `poetry.lock`) enquanto ignora o ambiente e os logs.
+## 3. Estrutura de Projeto Padronizada e Portatil
 
-## 4. Gerenciamento de Ambiente Declarativo e Portabilidade Total
+Toda a infraestrutura do `pypm` sera contida numa unica pasta `.pypm` para manter o diretorio do projeto limpo e facilitar a colaboracao.
 
-O gerenciamento de ambientes será a funcionalidade central, garantindo que um projeto funcione de forma idêntica em qualquer máquina.
+* **Ficheiros de Configuracao:** A pasta `.pypm` contera a configuracao do projeto partilhada (`pypm`) e a configuracao local especifica da maquina (`pypm.local`). O formato sera chave-valor, para ser compativel com o bootstrap inicial.
+* **Estrategia de `.gitignore` Inteligente:** O `pypm` ira gerar um `.gitignore` que versiona ficheiros de configuracao essenciais (`pypm`, `poetry.lock`, as configuracoes dos lancadores) enquanto ignora o `pypm.local`, o ambiente e os logs.
 
-* **Abstração da Versão do Python:** O `pypm.ini` não armazenará mais o caminho absoluto para o executável do Python. Em vez disso, ele guardará a **versão requerida** (ex: `python_version = "3.11.9"`).
-* **Provisionamento Automático de Python (Python-on-Demand):** Ao executar um projeto, o `pypm` lerá a versão do Python necessária. Se não a encontrar, ele usará sua própria funcionalidade para **baixar e instalar a versão exata automaticamente**.
-* **Importação Automática de Projetos:** Ao ser executado em um diretório com uma pasta `.pypm` não registrada, o `pypm` iniciará um fluxo de **importação automática**, registrando o projeto e adaptando os caminhos para a nova máquina, tornando trivial a configuração de um projeto clonado do Git.
-* **Exportação/Importação Manual:** Comandos `pypm export` e `pypm import` serão implementados para permitir a fácil migração de projetos entre sistemas.
+## 4. Gestor de Lancadores (Launchers)
 
-## 5. Melhoria da Interface de Linha de Comando (CLI)
-*(Esta seção permanece a mesma)*
+Esta e a evolucao do "comando final". Em vez de um unico ponto de entrada, o `pypm` ira gerir multiplos "lancadores" configuraveis para cada projeto.
 
-* **Novo Padrão de Argumentos:** A sintaxe mudará para um formato mais familiar: `pypm <comando> [argumentos] --opcao <valor>`.
-* **Execução de Tarefas Arbitrárias:** Suporte para `pypm run <script.py>` (local) e `pypm <id> --run <script.py>` (remoto).
-* **Comandos de Conveniência:** `pypm shell` para ativar o ambiente no diretório atual e `pypm init` para iniciar a configuração.
-* **Criação de Atalhos (`.lnk`):** Comando `pypm <id> --create-shortcut` para gerar um lançador de fácil acesso.
-* **Gerenciamento de Dependências via CLI:** Comandos `pypm <id> --add <pacote>` e `--remove <pacote>` para interagir com o Poetry.
+* **Lancadores Ilimitados:** Os utilizadores poderao registar multiplos comandos (ex: `start-server`, `run-tests`, `apply-migrations`), cada um com o seu proprio nome e configuracao.
+* **Configuracao Granular:** Cada lancador tera a sua propria configuracao, como o comando a ser executado, e se o output deve ser guardado num ficheiro de log com ou sem rotacao.
+* **Armazenamento e Portabilidade:** As configuracoes de cada lancador serao guardadas em ficheiros individuais dentro de uma nova pasta `.pypm/launchers/`. Isto garante que os lancadores sao versionados no Git e podem ser recriados noutra maquina.
+* **Criacao de Atalhos Fisicos:** O comando `--create-shortcut` ira ler a configuracao de um lancador especifico para criar um atalho (`.lnk` no Windows) que o executa.
 
+## 5. Gerenciamento de Ambiente Declarativo e Portabilidade Total
+
+O `pypm` garantira que um projeto funcione de forma identica em qualquer maquina.
+
+* **Abstracao da Versao do Python:** A configuracao do projeto guardara a **versao requerida** do Python (ex: `python_version = "3.11.9"`), nao um caminho absoluto.
+* **Provisionamento Automatico de Python (Python-on-Demand):** O `pypm` ira encontrar a versao do Python necessaria ou **baixa-la e instala-la automaticamente**.
+* **Importacao Automatica de Projetos:** Ao ser executado num diretorio com uma pasta `.pypm` nao registada, o `pypm` iniciara um fluxo de **importacao automatica**, tornando trivial a configuracao de um projeto clonado do Git.
+
+## 6. Melhoria da Interface de Linha de Comando (CLI)
+
+A CLI sera modernizada para maior flexibilidade e poder.
+
+* **Novo Padrao de Argumentos:** A sintaxe mudara para um formato mais familiar: `pypm <comando> [argumentos] --opcao <valor>`.
+* **Comandos para Lancadores:**
+    * `pypm <id> --list-launchers`: Lista todos os lancadores configurados para um projeto.
+    * `pypm <id> --start <nome_do_lancador>`: Executa um lancador especifico. Se nenhum nome for fornecido, pode executar um lancador marcado como "padrao".
+* **Comandos de Conveniencia:** `pypm shell` para ativar o ambiente no diretorio atual e `pypm init` para iniciar a configuracao.
+* **Gestao de Dependencias via CLI:** Comandos `pypm <id> --add <pacote>` e `--remove <pacote>` para interagir com o Poetry.
