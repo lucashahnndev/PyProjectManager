@@ -1,0 +1,41 @@
+================================================================================ PYTHON MANAGER - MODULO DE SERVICO
+Este script e um modulo de servico para encontrar, validar e instalar
+interpretes Python. Ele e projetado para ser chamado por outras ferramentas,
+como o pypm.bat, e nao para uso direto pelo utilizador.
+
+================================================================================ MODOS DE OPERACAO
+--get
+Garante que um Python compativel exista (procura e instala se
+necessario). E o modo mais poderoso e resiliente.
+
+--list, -l
+Lista todos os Pythons encontrados no sistema, utilizando um cache
+"auto-reparavel" para garantir que a lista esta sempre atualizada.
+O resultado e escrito num ficheiro de retorno, nao no console.
+
+--install
+Forca o download e a instalacao de uma versao especifica do Python.
+
+--help, -h
+Mostra esta tela de ajuda.
+
+================================================================================ PARAMETROS
+--version, -v <versao>
+Define a versao do Python a ser procurada ou instalada.
+Suporta correspondencia de prefixo (ex: "3.11" corresponde a "3.11.9").
+Obrigatorio para os modos --get e --install.
+
+--path, -p <caminho>
+Usado de duas formas, dependendo do modo:
+- Com --get: Especifica um caminho de um python.exe (ex: de um ficheiro .ini)
+a ser validado prioritariamente antes de procurar no resto do sistema.
+- Com --install: Especifica o diretorio de destino para a instalacao.
+Se nao for fornecido, um diretorio padrao sera usado.
+
+================================================================================ COMUNICACAO DE RETORNO
+Sucesso: O script termina com codigo 0 e escreve o resultado limpo
+(um caminho de python.exe ou uma lista) no ficheiro:
+%TEMP%\pypm_py_return.tmp
+
+Falha: O script termina com codigo 1 e imprime uma mensagem de erro.
+================================================================================
