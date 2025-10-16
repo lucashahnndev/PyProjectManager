@@ -57,16 +57,16 @@ goto :USAGE
 
 :MODE_GET
     if not defined ARG_VERSION (
-        echo [ERRO] O modo --get requer um parametro --version ^<versao^>. >&2
+        echo [ERROR] O modo --get requer um parametro --version ^<versao^>. >&2
         goto :USAGE
     )
-    echo A garantir que uma versao do Python compativel com "%ARG_VERSION%" esta disponivel...
+    echo [INFO] A garantir que uma versao do Python compativel com "%ARG_VERSION%" esta disponivel...
 
     rem 1. Se um caminho foi passado, valida-o primeiro (cache do projeto).
     if defined ARG_PATH (
         call :VALIDATE_PYTHON_PATH "!ARG_PATH!" "%ARG_VERSION%"
         if !ERRORLEVEL! equ 0 (
-            echo Python validado com sucesso a partir do caminho do projeto: !ARG_PATH!
+            echo [INFO] Python validado com sucesso a partir do caminho do projeto: !ARG_PATH!
             > "%RETURN_FILE%" echo !ARG_PATH!
             exit /b 0
         )
@@ -77,7 +77,7 @@ goto :USAGE
     call :SCAN_AND_POPULATE_ARRAYS
     call :FIND_PYTHON_BY_VERSION "%ARG_VERSION%"
     if !ERRORLEVEL! equ 0 (
-        echo Python compativel encontrado no sistema: !FOUND_PYTHON_PATH!
+        echo [INFO] Python compativel encontrado no sistema: !FOUND_PYTHON_PATH!
         > "%RETURN_FILE%" echo !FOUND_PYTHON_PATH!
         exit /b 0
     )
@@ -86,7 +86,7 @@ goto :USAGE
     echo [INFO] Nenhum Python compativel encontrado. A iniciar processo de instalacao...
     call :INSTALL_PYTHON "%ARG_VERSION%"
     if !ERRORLEVEL! neq 0 (
-        echo [ERRO] Falha ao instalar o Python. >&2
+        echo [ERROR] Falha ao instalar o Python. >&2
         exit /b 1
     )
     
@@ -109,12 +109,12 @@ goto :USAGE
 
 :MODE_INSTALL
     if not defined ARG_VERSION (
-        echo [ERRO] O modo --install requer um parametro --version ^<versao^>. >&2
+        echo [ERROR] O modo --install requer um parametro --version ^<versao^>. >&2
         goto :USAGE
     )
     call :INSTALL_PYTHON "%ARG_VERSION%" "%ARG_PATH%"
     if !ERRORLEVEL! neq 0 (
-        echo [ERRO] Falha ao instalar o Python. >&2
+        echo [ERROR] Falha ao instalar o Python. >&2
         exit /b 1
     )
     > "%RETURN_FILE%" echo !INSTALLED_PYTHON_PATH!
@@ -122,7 +122,7 @@ goto :USAGE
 
 :HELP
     if not exist "%~dp0..\helpers\python_manager_help.txt" (
-        echo [ERRO] Ficheiro de ajuda 'python_manager_help.txt' nao encontrado. >&2
+        echo [ERROR] Ficheiro de ajuda 'python_manager_help.txt' nao encontrado. >&2
         exit /b 1
     )
     type "%~dp0..\helpers\python_manager_help.txt"
@@ -246,8 +246,8 @@ goto :EOF
     set /a dot_count=0
     for %%w in (%temp_version%) do set /a dot_count+=1
     if not %dot_count% equ 3 (
-        echo [ERRO] Para instalacao, e necessario especificar uma versao completa ^(ex^: 3^.11^.9^). >&2
-        echo A versao fornecida "%PY_VERSION%" e invalida para download. >&2
+        echo [ERROR] Para instalacao, e necessario especificar uma versao completa ^(ex^: 3^.11^.9^). >&2
+        echo [ERROR] A versao fornecida "%PY_VERSION%" e invalida para download. >&2
         goto :EOF
     )
     
@@ -264,17 +264,17 @@ goto :EOF
     set "PY_URL=https://www.python.org/ftp/python/%PY_VERSION%/%PY_INSTALLER_FILENAME%"
 
     if not exist "%PY_INSTALLER_PATH%" (
-        echo A baixar o instalador de %PY_URL%... >&2
+        echo [INFO] A baixar o instalador de %PY_URL%... >&2
         powershell -Command "Invoke-WebRequest -Uri '%PY_URL%' -OutFile '%PY_INSTALLER_PATH%'"
     ) else (
         echo [INFO] A utilizar o instalador ja existente em cache.
     )
 
-    if not exist "%PY_INSTALLER_PATH%" ( echo [ERRO] Falha ao baixar o instalador. >&2 & goto :EOF )
+    if not exist "%PY_INSTALLER_PATH%" ( echo [ERROR] Falha ao baixar o instalador. >&2 & goto :EOF )
     
-    echo A instalar para todos os utilizadores em "%INSTALL_DIR%"... >&2
+    echo [INFO] A instalar para todos os utilizadores em "%INSTALL_DIR%"... >&2
     "%PY_INSTALLER_PATH%" /passive InstallAllUsers=1 Include_pip=1 TargetDir="%INSTALL_DIR%"
-    if !ERRORLEVEL! neq 0 ( echo [ERRO] A instalacao falhou. >&2 & del "%PY_INSTALLER_PATH%" 2>nul & goto :EOF )
+    if !ERRORLEVEL! neq 0 ( echo [ERROR] A instalacao falhou. >&2 & del "%PY_INSTALLER_PATH%" 2>nul & goto :EOF )
 
     rem Nao apaga o instalador para que possa ser reutilizado
     set "INSTALLED_PYTHON_PATH=%INSTALL_DIR%\python.exe"

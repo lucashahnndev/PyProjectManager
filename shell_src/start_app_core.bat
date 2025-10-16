@@ -17,7 +17,6 @@ setlocal enabledelayedexpansion
 
 :: --- 2. Carregar Configuracoes e Analisar Comando ---
 set "COMMAND_MODE=%~1"
-
 rem (Restante do analisador de comandos e help...)
 if /i "%COMMAND_MODE%"=="--help" goto :HELP
 if /i "%COMMAND_MODE%"=="-h" goto :HELP
@@ -27,7 +26,7 @@ if /i "%COMMAND_MODE%"=="/?" goto :HELP
 
 :: --- 1. Limpeza do Ambiente ---
 TITLE Project Starter Core
-echo Limpando ambiente da sessao atual...
+echo [INFO] Limpando ambiente da sessao atual...
 set "pypm_shell_path=%~dp0"
 set "PYTHONPATH=" & set "PYTHONHOME=" & set "PYTHONSTARTUP="
 set "PYTHONNOUSERSITE=" & set "PIP_CONFIG_FILE=" & set "PIP_REQUIRE_VIRTUALENV="
@@ -47,7 +46,7 @@ set "CONFIG_FILE=%CONFIG_DIR%\pypm"
 set "LOCAL_CONFIG_FILE=%CONFIG_DIR%\pypm.local"
 
 if not exist "!CONFIG_FILE!" (
-    echo [ERRO] Ficheiro de configuracao do projeto ^(`%CONFIG_FILE%`^) nao encontrado. >&2
+    echo [ERROR] Ficheiro de configuracao do projeto ^(`%CONFIG_FILE%`^) nao encontrado. >&2
     pause & exit /b 1
 )
 
@@ -58,25 +57,25 @@ if exist "%LOCAL_CONFIG_FILE%" (
     for /f "usebackq tokens=1,* delims==" %%a in ("%LOCAL_CONFIG_FILE%") do (set "%%a=%%b")
 )
 TITLE Project (%PROJECT_NAME%)
-echo Projeto: %PROJECT_NAME%
+echo [INFO] Projeto: %PROJECT_NAME%
 
 :: --- 3. Garantir o Python Correto ---
-echo A verificar o ambiente Python...
+echo [INFO] A verificar o ambiente Python...
 call "!pypm_shell_path!\python_manager.bat" --get --version "%PYTHON_VERSION%" --path "%PYTHON_PATH%"
 if !ERRORLEVEL! neq 0 (
-    echo [ERRO] Nao foi possivel obter um Python compativel com a versao %PYTHON_VERSION%. >&2
+    echo [ERROR] Nao foi possivel obter um Python compativel com a versao %PYTHON_VERSION%. >&2
     pause & exit /b 1
 )
 set /p FINAL_PYTHON_EXE=<"%TEMP%\.pypm\pypm_py_return.tmp"
-echo Python a ser usado: %FINAL_PYTHON_EXE%
+echo [INFO] Python a ser usado: %FINAL_PYTHON_EXE%
 
 :: --- 4. DELEGAR a Preparacao do Ambiente ---
-echo A preparar o ambiente de dependencias com o motor: %DEPENDENCY_ENGINEER%...
+echo [INFO] A preparar o ambiente de dependencias com o motor: %DEPENDENCY_ENGINEER%...
 set "VENV_PATH=%CD%\%CONFIG_DIR%\%VENV%"
 set "DEPS_FILE=%CD%\requirements.txt"
 
 if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" (
-    echo O executavel Python foi alterado. Reconstruindo o ambiente...
+    echo [INFO] O executavel Python foi alterado. Reconstruindo o ambiente...
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
         (
             echo PYTHON_PATH=!FINAL_PYTHON_EXE!
@@ -96,7 +95,9 @@ if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" (
     )
 ) else if /i "%COMMAND_MODE%"=="--add-dep" (
     rem Nao faz nada aqui, sera tratado na secao 5
-) else (
+) else if /i "%COMMAND_MODE%"=="--remove-dep" (
+    rem Nao faz nada aqui, sera tratado na secao 5
+)  else (
     rem Execucao padrao "smart"
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
         call "!pypm_shell_path!\dependency_manager_pip.bat" --ensure-env --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --deps-installed "!deps_installed!"
@@ -104,19 +105,18 @@ if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" (
         rem logica para poetry
     )
 )
-if !ERRORLEVEL! neq 0 ( echo [ERRO] Falha ao preparar o ambiente. >&2 & pause & exit /b 1 )
-echo Ambiente pronto.
+if !ERRORLEVEL! neq 0 ( echo [ERROR] Falha ao preparar o ambiente. >&2 & pause & exit /b 1 )
+echo [INFO] Ambiente pronto.
 
 
 :: --- 5. Analisador de Comandos e Execucao ---
 shift
-set "COMMAND_ARGS=%*"
+set "COMMAND_ARGS=%1"
 echo.
 echo ============================================================================
 
 if /i "%COMMAND_MODE%"=="--shell" (
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        echo "!pypm_shell_path!dependency_manager_pip.bat"
         call "!pypm_shell_path!dependency_manager_pip.bat" --shell --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!"
     ) else (
         rem logica para poetry
@@ -125,9 +125,19 @@ if /i "%COMMAND_MODE%"=="--shell" (
 )
 
 if /i "%COMMAND_MODE%"=="--add-dep" (
-    if not defined COMMAND_ARGS ( echo [ERRO] O modo --add-dep requer um pacote para adicionar. >&2 & pause & exit /b 1 )
+    if not defined COMMAND_ARGS ( echo [ERROR] O modo --add-dep requer um pacote para adicionar. >&2 & pause & exit /b 1 )
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --add-dep "!COMMAND_ARGS!" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!"
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --add-dep "!COMMAND_ARGS!"
+    ) else (
+        rem logica para poetry
+    )
+    exit /b
+)
+
+if /i "%COMMAND_MODE%"=="--remove-dep" (
+    if not defined COMMAND_ARGS ( echo [ERROR] O modo --remove-dep requer um pacote para adicionar. >&2 & pause & exit /b 1 )
+    if /i "%DEPENDENCY_ENGINEER%"=="pip" (
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --remove-dep "!COMMAND_ARGS!"
     ) else (
         rem logica para poetry
     )
@@ -146,14 +156,14 @@ if /i "%COMMAND_MODE%"=="--python-shell" (
         "!FINAL_PYTHON_EXE!" %~1 %~2 %~3 %~4
     )
 ) else if /i not "%COMMAND_MODE%"=="--rebuild" (
-    echo [ERRO] Comando desconhecido: %COMMAND_MODE%
+    echo [ERROR] Comando desconhecido: %COMMAND_MODE%
 )
 
 :: pause
 goto :EOF
 
 :HELP
-    if not exist "!pypm_shell_path!..\helpers\start_app_core_help.txt" ( echo [ERRO] Ficheiro de ajuda nao encontrado. >&2 & exit /b 1 )
+    if not exist "!pypm_shell_path!..\helpers\start_app_core_help.txt" ( echo [ERROR] Ficheiro de ajuda nao encontrado. >&2 & exit /b 1 )
     type "!pypm_shell_path!..\helpers\start_app_core_help.txt"
     exit /b 0
 
