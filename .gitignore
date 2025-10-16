@@ -169,6 +169,7 @@ python
 # Ficheiros gerados pelo PyProj
 */.pypm/*_venv
 */.pypm/pypm.local
+python_src/.pypm/pypm.local
 
 
 # Ficheiros temporários do Windows
