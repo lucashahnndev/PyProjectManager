@@ -1,14 +1,26 @@
 @echo off
 setlocal enabledelayedexpansion
-
+set "this_module=%~n0"
 :: ============================================================================
 ::                DEPENDENCY MANAGER - MODO PIP
 :: ============================================================================
-:: Este script e um modulo de servico para gerir ambientes virtuais (venv)
-:: e dependencias atraves do pip.
+:: v2 com sistema de logging externo (log_util.bat).
 :: ============================================================================
 
-:: --- Configuracao e Analisador de Argumentos ---
+:: --- 1. CONFIGURACAO DE LOGGING E ANALISE DE ARGS ---
+set "pypm_shell_path=%~dp0"
+set "LOG_UTIL_SCRIPT=!pypm_shell_path!\log_util.bat"
+
+:: Niveis de verbosidade
+set "LOG_LEVEL_ERROR=0"
+set "LOG_LEVEL_WARN=1"
+set "LOG_LEVEL_INFO=2"
+set "LOG_LEVEL_DEBUG=3"
+
+:: Nivel padrao
+set "LOG_LEVEL_NUM=2"
+
+:: Variaveis do script
 set "MODE="
 set "ARG_PYTHON_EXE="
 set "ARG_PROJECT_DIR="
@@ -19,8 +31,18 @@ set "ARG_DEPS_INSTALLED_FLAG="
 set "ARG_NO_CACHE=false"
 
 if "%~1"=="" goto :USAGE
+
 :PARSE_ARGS_LOOP
 if "%~1"=="" goto :DISPATCH
+
+:: --- Parser de Flags de Log ---
+if /i "%~1"=="--quiet" ( set "LOG_LEVEL_NUM=0" & shift & goto :PARSE_ARGS_LOOP )
+if /i "%~1"=="-q" ( set "LOG_LEVEL_NUM=0" & shift & goto :PARSE_ARGS_LOOP )
+if /i "%~1"=="--verbose" ( set "LOG_LEVEL_NUM=3" & shift & goto :PARSE_ARGS_LOOP )
+if /i "%~1"=="-v" ( set "LOG_LEVEL_NUM=3" & shift & goto :PARSE_ARGS_LOOP )
+if /i "%~1"=="--log-level" ( set "LOG_LEVEL_NUM=%~2" & shift & shift & goto :PARSE_ARGS_LOOP )
+
+:: --- Parser de Comandos do Script ---
 if /i "%~1"=="--ensure-env" set "MODE=ENSURE_ENV"
 if /i "%~1"=="--shell" set "MODE=SHELL"
 if /i "%~1"=="--add-dep" set "MODE=ADD_DEP"
@@ -42,9 +64,9 @@ shift
 goto :PARSE_ARGS_LOOP
 
 :DISPATCH
-if not defined MODE goto :USAGE
-if not defined ARG_PYTHON_EXE ( echo [ERRO] O parametro --python-exe e obrigatorio. >&2 & exit /b 1 )
-if not defined ARG_PROJECT_DIR ( echo [ERRO] O parametro --project-dir e obrigatorio. >&2 & exit /b 1 )
+if not defined MODE ( goto :USAGE )
+if not defined ARG_PYTHON_EXE ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O parametro --python-exe e obrigatorio." & exit /b 1 )
+if not defined ARG_PROJECT_DIR ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O parametro --project-dir e obrigatorio." & exit /b 1 )
 cd /d "%ARG_PROJECT_DIR%"
 if "%MODE%"=="ENSURE_ENV" goto :MODE_ENSURE_ENV
 if "%MODE%"=="SHELL" goto :MODE_SHELL
@@ -66,7 +88,7 @@ goto :USAGE
     )
 
     if "%NEEDS_INSTALL%"=="true" (
-        call :CREATE_VENV_AND_INSTALL
+         call :CREATE_VENV_AND_INSTALL
         if !ERRORLEVEL! neq 0 ( exit /b 1 )
         call :UPDATE_DEPS_FLAG
     )
@@ -74,79 +96,80 @@ goto :USAGE
 
 :MODE_SHELL
     call :CREATE_VENV_AND_INSTALL
-    if !ERRORLEVEL! neq 0 exit /b 1
-    echo [INFO] A abrir um novo terminal com o ambiente ativado...
+    if !ERRORLEVEL! neq 0 ( exit /b 1 )
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "A abrir um novo terminal com o ambiente ativado..."
     cmd /k ""%ARG_VENV_NAME%\Scripts\activate.bat""
     exit /b 0
 
 :MODE_ADD_DEP
-    if not defined ARG_PACKAGE ( echo [ERRO] O modo --add-dep requer o nome de um pacote. >&2 & exit /b 1 )
+    if not defined ARG_PACKAGE ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O modo --add-dep requer o nome de um pacote." & exit /b 1 )
     call :CREATE_VENV_AND_INSTALL
-    if !ERRORLEVEL! neq 0 exit /b 1
+    if !ERRORLEVEL! neq 0 ( exit /b 1 )
 
-    echo [INFO] A adicionar e instalar a dependencia: %ARG_PACKAGE%...
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A adicionar e instalar a dependencia: %ARG_PACKAGE%..."
     "!ARG_VENV_NAME!\Scripts\pip.exe" install "%ARG_PACKAGE%"
-    if !ERRORLEVEL! neq 0 ( echo [ERRO] Falha ao instalar o pacote. >&2 & exit /b 1 )
+    if !ERRORLEVEL! neq 0 ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao instalar o pacote." & exit /b 1 )
 
     if exist "!ARG_DEPS_FILE!" (
-        echo [INFO] A adicionar "%ARG_PACKAGE%" ao ficheiro %ARG_DEPS_FILE%...
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A adicionar '%ARG_PACKAGE%' ao ficheiro %ARG_DEPS_FILE%..."
         >>"%ARG_DEPS_FILE%" echo %ARG_PACKAGE%
     )
-    echo [INFO] Pacote instalado e adicionado com sucesso.
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "Pacote instalado e adicionado com sucesso."
     exit /b 0
 
 :MODE_REMOVE_DEP
     "!ARG_VENV_NAME!\Scripts\pip.exe" uninstall "%ARG_PACKAGE%" -y
     if !ERRORLEVEL! equ 1 (
-        echo [ERROR] !ARG_PACKAGE! nao encontrada como instalada!
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "!ARG_PACKAGE! nao encontrada como instalada!"
     )
-    if not exist "%ARG_DEPS_FILE%"   exit /b 0
+    if not exist "%ARG_DEPS_FILE%" ( exit /b 0 )
     set "LOCAL_CONFIG_FILE=%ARG_DEPS_FILE%.temp"
     set "found_depdendency=False"
     (for /f "usebackq tokens=1,* delims==" %%a in ("%ARG_DEPS_FILE%") do (
             echo %%a | findstr /R /C:^%ARG_PACKAGE% >nul
             if !ERRORLEVEL! equ 1 (
-                echo %%a
+                 echo %%a
             ) else (
                 set "found_depdendency=True"
             )
     )) > "%LOCAL_CONFIG_FILE%.tmp"
     move /y "%LOCAL_CONFIG_FILE%.tmp" "%ARG_DEPS_FILE%" >nul
     if "!found_depdendency!"=="True" (
-        echo [INFO] !ARG_PACKAGE! removido com sucesso!
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "!ARG_PACKAGE! removido com sucesso!"
     ) else (
-        echo [WARNING] !ARG_PACKAGE! nao encontrada como instalada!
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "!ARG_PACKAGE! nao encontrada como instalada!"
     )
-    rem Implementacao do remove-dep
     exit /b 0
 
 :MODE_REBUILD
-    if not defined ARG_VENV_NAME ( echo [ERRO] O modo --rebuild requer o parametro --venv. >&2 & exit /b 1 )
-    
-    echo [INFO] A reconstruir o ambiente...
+    if not defined ARG_VENV_NAME ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O modo --rebuild requer o parametro --venv." & exit /b 1 )
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A reconstruir o ambiente..."
     if exist "%ARG_VENV_NAME%" (
-        echo [INFO] A remover o ambiente virtual antigo...
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A remover o ambiente virtual antigo..."
         rmdir /s /q "%ARG_VENV_NAME%"
     )
     
-    echo [INFO] A limpar caches Python...
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A limpar caches Python..."
     for /r %%i in (__pycache__) do if exist "%%i" rmdir /s /q "%%i"
     del /s /q *.pyc > nul 2>nul
 
 
     set "ARG_DEPS_INSTALLED_FLAG=False"
     call :MODE_ENSURE_ENV 
-    if !ERRORLEVEL! neq 0 exit /b 1
+    if !ERRORLEVEL! neq 0 ( exit /b 1 )
 
-    echo [INFO] Ambiente reconstruido com sucesso.
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "Ambiente reconstruido com sucesso."
     exit /b 0
 
 :HELP
-    rem Implementacao do help
+    :: (Implementacao do help...)
     exit /b 0
 
 :USAGE
-    echo. >&2 & echo [INFO] Uso: %~n0 [modo] [parametros] >&2 & echo Para mais informacoes, use: %~n0 --help >&2 & exit /b 1
+    echo. >&2
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "Uso: !this_module! [modo] [parametros]" >&2
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "Para mais informacoes, use: !this_module! --help" >&2
+    exit /b 1
 
 :: ============================================================================
 :: --- FUNCOES DE LOGICA INTERNA ---
@@ -156,20 +179,24 @@ goto :USAGE
     if not defined ARG_VENV_NAME ( exit /b 0 )
     set "VENV_CREATED_NOW=false"
     if not exist "%ARG_VENV_NAME%" (
-        echo [INFO] Ambiente virtual nao encontrado. A criar em "%ARG_VENV_NAME%"...
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A criar novo ambiente virtual em '%ARG_VENV_NAME%'..."
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "Isso acontecera apenas uma vez..."
         "%ARG_PYTHON_EXE%" -m venv "%ARG_VENV_NAME%"
-        if !ERRORLEVEL! neq 0 ( echo [ERRO] Falha ao criar o ambiente virtual. >&2 & exit /b 1 )
+        if !ERRORLEVEL! neq 0 ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao criar o ambiente virtual." & exit /b 1 )
         set "VENV_CREATED_NOW=true"
+        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A atualizar pip..."
+        "!ARG_VENV_NAME!\Scripts\pip.exe" install --upgrade pip
     )
     if "%NEEDS_INSTALL%"=="true" (
         if defined ARG_DEPS_FILE (
             if exist "!ARG_DEPS_FILE!" (
-                echo [INFO] A instalar dependencias de %ARG_DEPS_FILE%...
+                call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A instalar dependencias de %ARG_DEPS_FILE%..."
+                call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "Isso acontecera apenas uma vez..."
                 set "PIP_OPTIONS="
                 if "%ARG_NO_CACHE%"=="true" set "PIP_OPTIONS=--no-cache-dir"
                 "!ARG_VENV_NAME!\Scripts\pip.exe" install %PIP_OPTIONS% -r "!ARG_DEPS_FILE!"
                 if !ERRORLEVEL! neq 0 (
-                    echo [WARNING] Ocorreram erros durante a instalacao das dependencias. >&2
+                    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "Ocorreram erros durante a instalacao das dependencias."
                     exit /b 1
                 )
             )
@@ -181,7 +208,7 @@ goto :EOF
 :UPDATE_DEPS_FLAG
     set "LOCAL_CONFIG_FILE=.pypm\pypm.local"
     if not exist "%LOCAL_CONFIG_FILE%" goto :EOF
-    :: echo [INFO] A atualizar o status de 'deps_installed' para True...
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "A atualizar o status de 'deps_installed' para True..."
     (for /f "usebackq tokens=1,* delims==" %%a in ("%LOCAL_CONFIG_FILE%") do (
         if /i "%%a"=="deps_installed" (
             echo deps_installed=True

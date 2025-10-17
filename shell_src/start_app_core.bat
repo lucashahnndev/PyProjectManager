@@ -1,22 +1,48 @@
 @echo off
 setlocal enabledelayedexpansion
-
+set "this_module=%~n0"
 :: ============================================================================
 ::                PROJECT STARTER CORE (`start_app_core.bat`)
 :: ============================================================================
-:: Este script e o motor de execucao para um projeto pypm.
-::
-:: Responsabilidades:
-:: 1. Limpar o ambiente de execucao.
-:: 2. Ler as configuracoes do projeto (`pypm` e `pypm.local`).
-:: 3. Usar `python_manager.bat` para garantir a versao correta do Python.
-:: 4. Delegar a preparacao do ambiente ao gestor de dependencias apropriado.
-:: 5. Executar a acao final solicitada pelo utilizador.
+:: v2 com sistema de logging configuravel (refatorado para usar log_util.bat).
 :: ============================================================================
 
+:: --- 1. CONFIGURACAO DE LOGGING E ANALISE DE ARGS ---
 
-:: --- 2. Carregar Configuracoes e Analisar Comando ---
-set "COMMAND_MODE=%~1"
+set "pypm_shell_path=%~dp0"
+set "pypm_python_src_path=../%~dp0"
+
+:: Niveis de verbosidade 
+set "LOG_LEVEL_ERROR=0"
+set "LOG_LEVEL_WARN=1"
+set "LOG_LEVEL_INFO=2"
+set "LOG_LEVEL_DEBUG=3"
+
+:: Nivel padrao 
+set "LOG_LEVEL_NUM=2"
+set "LOG_LEVEL_NAME=INFO"
+
+:: Variaveis do script 
+set "COMMAND_MODE="
+set "NEW_LOG_LEVEL_FLAG="
+set "ARGS_FOR_CORE="
+
+:: Loop de pre-analise para encontrar flags de log 
+:PARSE_LOG_ARGS_LOOP
+if "%~1"=="" goto :PARSE_LOG_ARGS_END
+if /i "%~1"=="--quiet" ( set "NEW_LOG_LEVEL_FLAG=0" & shift & goto :PARSE_LOG_ARGS_LOOP )
+if /i "%~1"=="-q" ( set "NEW_LOG_LEVEL_FLAG=0" & shift & goto :PARSE_LOG_ARGS_LOOP )
+if /i "%~1"=="--verbose" ( set "NEW_LOG_LEVEL_FLAG=3" & shift & goto :PARSE_LOG_ARGS_LOOP )
+if /i "%~1"=="-v" ( set "NEW_LOG_LEVEL_FLAG=3" & shift & goto :PARSE_LOG_ARGS_LOOP )
+if /i "%~1"=="--log-level" ( set "NEW_LOG_LEVEL_FLAG=%~2" & shift & shift & goto :PARSE_LOG_ARGS_LOOP )
+
+:: Se nao for uma flag de log, reconstroi a lista de argumentos para o core
+if not defined COMMAND_MODE ( set "COMMAND_MODE=%~1" )
+if defined ARGS_FOR_CORE ( set "ARGS_FOR_CORE=!ARGS_FOR_CORE! %1" ) else ( set "ARGS_FOR_CORE=%1" )
+shift
+goto :PARSE_LOG_ARGS_LOOP
+:PARSE_LOG_ARGS_END
+
 rem (Restante do analisador de comandos e help...)
 if /i "%COMMAND_MODE%"=="--help" goto :HELP
 if /i "%COMMAND_MODE%"=="-h" goto :HELP
@@ -24,10 +50,8 @@ if /i "%COMMAND_MODE%"=="-?" goto :HELP
 if /i "%COMMAND_MODE%"=="/?" goto :HELP
 
 
-:: --- 1. Limpeza do Ambiente ---
+:: --- 2. Limpeza do Ambiente ---
 TITLE Project Starter Core
-echo [INFO] Limpando ambiente da sessao atual...
-set "pypm_shell_path=%~dp0"
 set "PYTHONPATH=" & set "PYTHONHOME=" & set "PYTHONSTARTUP="
 set "PYTHONNOUSERSITE=" & set "PIP_CONFIG_FILE=" & set "PIP_REQUIRE_VIRTUALENV="
 set "PIP_USER=" & set "PIP_CACHE_DIR="
@@ -41,41 +65,53 @@ for %%i in ("%PATH:;=" "%") do (
 set "PATH=%CLEAN_PATH%"
 
 
+:: --- 3. Carregar Configuracoes ---
 set "CONFIG_DIR=.pypm"
 set "CONFIG_FILE=%CONFIG_DIR%\pypm"
 set "LOCAL_CONFIG_FILE=%CONFIG_DIR%\pypm.local"
 
 if not exist "!CONFIG_FILE!" (
-    echo [ERROR] Ficheiro de configuracao do projeto ^(`%CONFIG_FILE%`^) nao encontrado. >&2
+    call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Ficheiro de configuracao do projeto ^(`%CONFIG_FILE%`^) nao encontrado."
     pause & exit /b 1
 )
 
+:: Carrega configuracoes e PROCURA o nivel de log 
 for /f "usebackq tokens=1,* delims==" %%a in ("%CONFIG_FILE%") do (
     set "%%a=%%b"
+    if /i "%%a"=="LOG_LEVEL" set "LOG_LEVEL_NUM=%%b"
 )
 if exist "%LOCAL_CONFIG_FILE%" (
     for /f "usebackq tokens=1,* delims==" %%a in ("%LOCAL_CONFIG_FILE%") do (set "%%a=%%b")
 )
-TITLE Project (%PROJECT_NAME%)
-echo [INFO] Projeto: %PROJECT_NAME%
 
-:: --- 3. Garantir o Python Correto ---
-echo [INFO] A verificar o ambiente Python...
-call "!pypm_shell_path!\python_manager.bat" --get --version "%PYTHON_VERSION%" --path "%PYTHON_PATH%"
+:: APLICAR SOBRESCRITA DA FLAG (se existir) 
+if defined NEW_LOG_LEVEL_FLAG (
+    call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Log level sobrescrito pela flag: %NEW_LOG_LEVEL_FLAG%"
+    set "LOG_LEVEL_NUM=%NEW_LOG_LEVEL_FLAG%"
+)
+
+TITLE Project (%PROJECT_NAME%)
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Projeto: %PROJECT_NAME% [Log Level: %LOG_LEVEL_NUM%]"
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Limpando ambiente da sessao atual..."
+
+
+:: --- 4. Garantir o Python Correto ---
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "A verificar o ambiente Python..."
+call "!pypm_shell_path!\python_manager.bat" --get --version "%PYTHON_VERSION%" --path "%PYTHON_PATH%"  --log-level !LOG_LEVEL_NUM!
 if !ERRORLEVEL! neq 0 (
-    echo [ERROR] Nao foi possivel obter um Python compativel com a versao %PYTHON_VERSION%. >&2
+    call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Nao foi possivel obter um Python compativel com a versao %PYTHON_VERSION%."
     pause & exit /b 1
 )
 set /p FINAL_PYTHON_EXE=<"%TEMP%\.pypm\pypm_py_return.tmp"
-echo [INFO] Python a ser usado: %FINAL_PYTHON_EXE%
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Python a ser usado: %FINAL_PYTHON_EXE%"
 
-:: --- 4. DELEGAR a Preparacao do Ambiente ---
-echo [INFO] A preparar o ambiente de dependencias com o motor: %DEPENDENCY_ENGINEER%...
+:: --- 5. DELEGAR a Preparacao do Ambiente ---
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "A preparar o ambiente de dependencias com o motor: %DEPENDENCY_ENGINEER%..."
 set "VENV_PATH=%CD%\%CONFIG_DIR%\%VENV%"
 set "DEPS_FILE=%CD%\requirements.txt"
 
-if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" (
-    echo [INFO] O executavel Python foi alterado. Reconstruindo o ambiente...
+if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" ( 
+    call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "O executavel Python foi alterado. Reconstruindo o ambiente..."
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
         (
             echo PYTHON_PATH=!FINAL_PYTHON_EXE!
@@ -83,41 +119,52 @@ if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" (
             echo PROJECT_DIR=!PROJECT_DIR!
             echo deps_installed=False
         )>!LOCAL_CONFIG_FILE!
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!"
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --log-level !LOG_LEVEL_NUM! --deps-file "!DEPS_FILE!" --no-cache
     ) else (
         rem logica para poetry
     )
 ) else if /i "%COMMAND_MODE%"=="--rebuild" (
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!"
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --log-level !LOG_LEVEL_NUM! --deps-file "!DEPS_FILE!" --no-cache
     ) else (
         rem logica para poetry
     )
-) else if /i "%COMMAND_MODE%"=="--add-dep" (
-    rem Nao faz nada aqui, sera tratado na secao 5
-) else if /i "%COMMAND_MODE%"=="--remove-dep" (
-    rem Nao faz nada aqui, sera tratado na secao 5
+) else if /i "%COMMAND_MODE%"=="--add-dep" ( 
+    rem Nao faz nada aqui, sera tratado na secao 6
+) else if /i "%COMMAND_MODE%"=="--remove-dep" ( 
+    rem Nao faz nada aqui, sera tratado na secao 6
 )  else (
     rem Execucao padrao "smart"
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --ensure-env --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --deps-installed "!deps_installed!"
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --ensure-env --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --deps-installed "!deps_installed!" --log-level !LOG_LEVEL_NUM!
     ) else (
         rem logica para poetry
     )
 )
-if !ERRORLEVEL! neq 0 ( echo [ERROR] Falha ao preparar o ambiente. >&2 & pause & exit /b 1 )
-echo [INFO] Ambiente pronto.
+if !ERRORLEVEL! neq 0 ( call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao preparar o ambiente." & pause & exit /b 1 )
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Ambiente pronto." 
 
+:: --- 6. Analisador de Comandos e Execucao --- 
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Argumentos recebidos pelo core: %ARGS_FOR_CORE%"
 
-:: --- 5. Analisador de Comandos e Execucao ---
-shift
-set "COMMAND_ARGS=%1"
-echo.
-echo ============================================================================
+:: (Precisamos re-parsear os argumentos sem as flags de log)
+set "ARG1=" & set "ARG2="
+for /f "tokens=1,2" %%i in ("%ARGS_FOR_CORE%") do (
+    set "ARG1=%%i"
+    set "ARG2=%%j"
+)
+set "COMMAND_MODE=%ARG1%"
+set "COMMAND_ARGS=%ARG2%"
+
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Comando principal: %COMMAND_MODE%"
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Argumentos do comando: %COMMAND_ARGS%"
+
+if %LOG_LEVEL_NUM% GEQ 3 echo.
+if %LOG_LEVEL_NUM% GEQ 3 echo ============================================================================
 
 if /i "%COMMAND_MODE%"=="--shell" (
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!dependency_manager_pip.bat" --shell --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!"
+        call "!pypm_shell_path!dependency_manager_pip.bat" --shell --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --log-level !LOG_LEVEL_NUM!
     ) else (
         rem logica para poetry
     )
@@ -125,9 +172,9 @@ if /i "%COMMAND_MODE%"=="--shell" (
 )
 
 if /i "%COMMAND_MODE%"=="--add-dep" (
-    if not defined COMMAND_ARGS ( echo [ERROR] O modo --add-dep requer um pacote para adicionar. >&2 & pause & exit /b 1 )
+    if not defined COMMAND_ARGS ( call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O modo --add-dep requer um pacote para adicionar." & pause & exit /b 1 )
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --add-dep "!COMMAND_ARGS!"
+         call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --log-level !LOG_LEVEL_NUM! --add-dep "!COMMAND_ARGS!" 
     ) else (
         rem logica para poetry
     )
@@ -135,37 +182,43 @@ if /i "%COMMAND_MODE%"=="--add-dep" (
 )
 
 if /i "%COMMAND_MODE%"=="--remove-dep" (
-    if not defined COMMAND_ARGS ( echo [ERROR] O modo --remove-dep requer um pacote para adicionar. >&2 & pause & exit /b 1 )
+    if not defined COMMAND_ARGS ( call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O modo --remove-dep requer um pacote para adicionar." & pause & exit /b 1 )
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --remove-dep "!COMMAND_ARGS!"
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --log-level !LOG_LEVEL_NUM! --remove-dep "!COMMAND_ARGS!" 
     ) else (
-        rem logica para poetry
+         rem logica para poetry
     )
     exit /b
 )
 
-rem (Restante dos comandos: --run, --python-shell, etc.)
 if /i "%COMMAND_MODE%"=="--python-shell" (
-    echo [INFO] Ambiente preparado. Executando !FINAL_PYTHON_EXE!
+    call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Executando !FINAL_PYTHON_EXE!"
     "!FINAL_PYTHON_EXE!"
 ) else if /i "%COMMAND_MODE%"=="--run" (
-    if /i "%~1"=="" (
-        echo [INFO] Ambiente preparado. Nenhum comando de execucao fornecido.
+    if /i "%COMMAND_ARGS%"=="" (
+        call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "Ambiente preparado. Nenhum comando de execucao fornecido." 
     ) else (
-        echo [INFO] Ambiente preparado. Executando comando --run %~1 %~2 %~3 %~4
-        "!FINAL_PYTHON_EXE!" %~1 %~2 %~3 %~4
+        call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Ambiente preparado. Executando comando --run %COMMAND_ARGS%..."
+        
+        :: Reconstrói os argumentos restantes (tudo depois de --run)
+        set "RUN_CMD="
+        for %%a in (%ARGS_FOR_CORE%) do (
+            if /i not "%%a"=="--run" (
+                set "RUN_CMD=!RUN_CMD! %%a"
+            )
+        )
+        
+        "!FINAL_PYTHON_EXE!" !RUN_CMD!
     )
 ) else if /i not "%COMMAND_MODE%"=="--rebuild" (
-    echo [ERROR] Comando desconhecido: %COMMAND_MODE%
+    call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Comando desconhecido: %COMMAND_MODE%"
 )
 
-:: pause
 goto :EOF
 
 :HELP
-    if not exist "!pypm_shell_path!..\helpers\start_app_core_help.txt" ( echo [ERROR] Ficheiro de ajuda nao encontrado. >&2 & exit /b 1 )
+    if not exist "!pypm_shell_path!..\helpers\start_app_core_help.txt" ( call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Ficheiro de ajuda nao encontrado." & exit /b 1 )
     type "!pypm_shell_path!..\helpers\start_app_core_help.txt"
     exit /b 0
 
 endlocal
-

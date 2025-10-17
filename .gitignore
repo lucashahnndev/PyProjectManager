@@ -166,11 +166,11 @@ python
 *vscode*
 
 
-# Ficheiros gerados pelo PyProj
+# Ficheiros gerados pelo pypm
 */.pypm/*_venv
 */.pypm/pypm.local
 python_src/.pypm/pypm.local
-
+pypm.db
 
 # Ficheiros temporários do Windows
 *.tmp
