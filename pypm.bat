@@ -119,7 +119,7 @@ goto :SUCCESS
 
 :HANDLE_INIT
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!" "Modo: INIT"
-    
+
     :: Remove 'init' dos argumentos
     set "REMAINING_ARGS="
     for /f "tokens=1,*" %%i in ("%ARGS_FOR_ROUTER%") do (
@@ -174,20 +174,20 @@ goto :SUCCESS
     :: Esta funcao consulta o DB (via worker) para encontrar o diretorio
     set "TARGET_DIR="
     set "TARGET_TO_FIND=%~1"
-    
+
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!" "Consultando DB para: %TARGET_TO_FIND%"
-    
+
     :: Captura a saida do worker Python (que da 'print' no caminho)
     for /f "delims=" %%i in ('call :RUN_PYPM_WORKER_FOR_OUTPUT "%DB_WORKER_SCRIPT%" get %TARGET_TO_FIND%') do (
         set "COMMAND_RESULT=%%i"
     )
-    
+
     :: Se a saida contiver [ERROR], falhou
     if not "!COMMAND_RESULT!"=="!COMMAND_RESULT:[DB_MANAGER_ERROR]=!" (
         set "TARGET_DIR="
         goto :EOF
     )
-    
+
     set "TARGET_DIR=!COMMAND_RESULT!"
     goto :EOF
 
@@ -207,13 +207,13 @@ goto :SUCCESS
     :: Executa um worker (ex: get) e FORCA o --quiet para capturar
     :: uma saida limpa (o caminho do diretorio).
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!" "Executando Worker (Modo Output): %*"
-    
+
     cd /d "%PYPM_PROJ_DIR%"
     :: Forca --quiet, independentemente das flags do usuario
     call "%CORE_RUNNER%" --quiet --run %*
     cd /d "%ORIGINAL_DIR%"
     goto :EOF
-    
+
 
 :: ============================================================================
 ::                PONTOS DE SAIDA

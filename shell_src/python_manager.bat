@@ -110,7 +110,7 @@ goto :USAGE
         call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao instalar o Python^."
         exit /b 1
     )
-    
+
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "Python instalado com sucesso em: !INSTALLED_PYTHON_PATH!"
     > "%RETURN_FILE%" echo !INSTALLED_PYTHON_PATH!
     exit /b 0
@@ -125,7 +125,6 @@ goto :USAGE
     (for /l %%i in (1,1,%py_count%) do (
         echo !py_version[%%i]!;!py_path[%%i]!
     )) > "%RETURN_FILE%"
-    
     :: Se o log for INFO ou superior, imprime a lista no console.
     if %LOG_LEVEL_NUM% GEQ 2 type "%RETURN_FILE%"
     exit /b 0
@@ -164,7 +163,7 @@ goto :USAGE
 :SCAN_AND_POPULATE_ARRAYS
     set /a py_count=0
     set "cache_updated=false"
-    
+
     rem Logica de cache auto-reparavel
     if exist "%PY_CACHE_FILE%" (
         (for /f "usebackq tokens=1,2 delims=;" %%a in ("%PY_CACHE_FILE%") do (
@@ -185,7 +184,7 @@ goto :USAGE
     )
 
     rem Logica de scan do registro para encontrar novos Pythons
-    for %%R in (HKLM HKCU) do ( for /f "delims=" %%K in ('reg query "%%R\SOFTWARE\Python\PythonCore" 2^>nul') do ( for /f "tokens=*" %%V in ('reg query "%%K" 2^>nul ^| findstr /r "[0-9]\.[0-9]"') do ( for /f "tokens=2,*" %%A in ('reg query "%%V\InstallPath" /ve 2^>nul') do ( set "current_path=%%B\python.exe" & set "is_new=true" & (for /l %%i in (1,1,!py_count!) do ( if /i "!py_path[%%i]!"=="!current_path!" set "is_new=false" )) & if "!is_new!"=="true" if exist "!current_path!" ( (for /f "tokens=2" %%v in ('"!current_path!" --version 2^>^&1') do set "version_str=%%v") & set /a py_count+=1 & set "py_version[!py_count!]=!version_str!" & set "py_path[!py_count!]=!current_path!" & set "cache_updated=true" ) ) ) ) )
+    for %%R in (HKLM HKCU) do ( for /f "delims=" %%K in ('reg query "%%R\SOFTWARE\Python\PythonCore" 2^>nul') do ( for /f "tokens=*" %%V in ('reg query "%%K" 2^>nul ^| findstr /r "[0-9]\.[0-9]"') do ( for /f "tokens=2,*" %%A in ('reg query "%%V\InstallPath" /ve 2^>nul') do ( set "current_path=%%B\python.exe" & set "current_path=!current_path:\\=\!" & set "is_new=true" & (for /l %%i in (1,1,!py_count!) do ( if /i "!py_path[%%i]!"=="!current_path!" set "is_new=false" )) & if "!is_new!"=="true" if exist "!current_path!" ( (for /f "tokens=2" %%v in ('"!current_path!" --version 2^>^&1') do set "version_str=%%v") & set /a py_count+=1 & set "py_version[!py_count!]=!version_str!" & set "py_path[!py_count!]=!current_path!" & set "cache_updated=true" ) ) ) ) )
 
     rem [NOVO] Logica de scan do PATH para encontrar ainda mais Pythons
     call :SEARCH_PATH_FOR_PYTHON
@@ -195,7 +194,10 @@ goto :USAGE
         call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "A atualizar o ficheiro de cache de Pythons..."
         >"%PY_CACHE_FILE%" (
             for /l %%i in (1,1,%py_count%) do (
-                echo !py_version[%%i]!;!py_path[%%i]!
+                echo "!py_version[%%i]!" | findstr "\." >nul
+                if !ERRORLEVEL! equ 0 (
+                    echo !py_version[%%i]!;!py_path[%%i]!
+                )
             )
         )
     )
@@ -216,11 +218,16 @@ goto :EOF
                     rem E novo, obtem a versao e adiciona-o
                     (for /f "tokens=2" %%v in ('"!current_path!" --version 2^>^&1') do set "version_str=%%v")
                     if defined version_str (
-                        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Nova versao encontrada no PATH: !current_path!"
-                        set /a py_count+=1
-                        set "py_version[!py_count!]=!version_str!"
-                        set "py_path[!py_count!]=!current_path!"
-                        set "cache_updated=true"
+                        echo "!version_str!" | findstr /R "[0-9]\.[0-9]" >nul
+                        if !ERRORLEVEL! equ 0 (
+                            call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Nova versao encontrada no PATH: !current_path!"
+                            set /a py_count+=1
+                            set "py_version[!py_count!]=!version_str!"
+                            set "py_path[!py_count!]=!current_path!"
+                            set "cache_updated=true"
+                        ) else (
+                        call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Ignorando executavel em '!current_path!'. Saida de '--version' nao e uma versao valida ['!version_str!'].^"
+                        )
                     )
                 )
             )
@@ -262,7 +269,7 @@ goto :EOF
     set "INSTALL_DIR=%~2"
     set "INSTALLED_PYTHON_PATH="
     set "install_result=1"
-     
+
     set "temp_version=%PY_VERSION%"
     set "temp_version=%temp_version:.= %"
     set /a dot_count=0
@@ -273,13 +280,13 @@ goto :EOF
         ::goto :EOF
         exit /b 1
     )
-    
+
     if not defined INSTALL_DIR set "INSTALL_DIR=%SystemDrive%\Python\Python%PY_VERSION:.=%"
-    
+
     rem [NOVO] Verifica a arquitetura do sistema para escolher o instalador correto.
     set "ARCH_SUFFIX="
     if defined ProgramFiles(x86) set "ARCH_SUFFIX=-amd64"
-    
+
     set "PY_INSTALLER_FILENAME=python-%PY_VERSION%%ARCH_SUFFIX%.exe"
     set "INSTALLER_CACHE_DIR=%pypm_TEMP%\python_cache"
     if not exist "%INSTALLER_CACHE_DIR%" mkdir "%INSTALLER_CACHE_DIR%"
@@ -294,7 +301,7 @@ goto :EOF
     )
 
     if not exist "%PY_INSTALLER_PATH%" ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao baixar o instalador." & goto :EOF )
-    
+
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A instalar para todos os utilizadores em '%INSTALL_DIR%'..."
     "%PY_INSTALLER_PATH%" /passive InstallAllUsers=1 Include_pip=1 TargetDir="%INSTALL_DIR%"
     if !ERRORLEVEL! neq 0 ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "A instalacao falhou." & del "%PY_INSTALLER_PATH%" 2>nul & goto :EOF )

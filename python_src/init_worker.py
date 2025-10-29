@@ -38,7 +38,7 @@ def get_available_pythons() -> List[Tuple[str, str]]:
         # .parent.parent = C:\pypm
         root_dir = Path(__file__).resolve().parent.parent
         py_manager_path = root_dir / "shell_src" / "python_manager.bat"
-        
+
         # O python_manager.bat escreve o seu resultado neste ficheiro
         return_file = Path(tempfile.gettempdir()) / ".pypm" / "pypm_py_return.tmp"
 
@@ -61,7 +61,7 @@ def get_available_pythons() -> List[Tuple[str, str]]:
                 if ";" in line:
                     version, path = line.strip().split(";", 1)
                     pythons.append((version, path))
-        
+
         return pythons
 
     except Exception as e:
@@ -74,7 +74,7 @@ def _select_from_list(prompt: str, options: List[str]) -> Tuple[int, str]:
     print(f"\n--- {prompt} ---")
     for i, option in enumerate(options):
         print(f"  [{i+1}] {option}")
-    
+
     while True:
         try:
             choice = input(f"Escolha [1-{len(options)}]: ")
@@ -105,7 +105,7 @@ def run_interactive_init() -> Optional[ProjectConfig]:
         print("[INIT_WORKER_ERROR] Nenhum Python encontrado!", file=sys.stderr)
         print("Por favor, instale um Python ou adicione-o usando 'pypm python install ...'", file=sys.stderr)
         return None
-    
+
     # Formata as opções para o menu
     python_options = [f"{ver} ({path})" for ver, path in pythons]
     idx, _ = _select_from_list("Escolha uma versão do Python", python_options)
@@ -142,7 +142,7 @@ def create_project_files(config: ProjectConfig, db_manager: DatabaseManager) -> 
     try:
         config_dir = config.project_dir / ".pypm"
         config_dir.mkdir(exist_ok=True)
-        
+
         # 1. Criar .pypm/pypm (Ficheiro de config principal)
         with open(config_dir / "pypm", "w") as f:
             f.write(f"PROJECT_NAME={config.name}\n")
@@ -163,10 +163,10 @@ def create_project_files(config: ProjectConfig, db_manager: DatabaseManager) -> 
             py_version=config.python_version,
             engine=config.engine
         )
-        
+
         if not proj:
             return False
-            
+
         print(f"[INFO] Projeto '{config.name}' criado e registado com sucesso.")
         print("[INFO] Pode agora executar 'pypm start' (ou outros comandos) neste diretório.")
         return True
@@ -179,10 +179,10 @@ def create_project_files(config: ProjectConfig, db_manager: DatabaseManager) -> 
 def main():
     """
     Ponto de entrada para o Roteador 'pypm.bat'.
-    
+
     Chamado por: pypm.bat (handle_init) -> RUN_PYPM_WORKER "init_worker.py" [args...]
     """
-    
+
     # 1. Conectar à Base de Dados
     ROOT_DIR = Path(__file__).resolve().parent.parent
     DB_PATH = ROOT_DIR / "pypm.db"
@@ -195,7 +195,7 @@ def main():
         # TODO: Implementar lógica de parsing de flags (ex: pypm init --name X --python Y)
         print("[INFO] Modo não-interativo (via flags) ainda não implementado.")
         print("A iniciar modo interativo...")
-    
+
     # 3. Executar o Menu Interativo
     try:
         config = run_interactive_init()
@@ -203,7 +203,7 @@ def main():
             create_project_files(config, db)
         else:
             print("[INFO] Criação do projeto cancelada.")
-            
+
     except KeyboardInterrupt:
         print("\n\n[INFO] Criação do projeto cancelada pelo usuário.")
         sys.exit(0)
