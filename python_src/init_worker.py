@@ -1,4 +1,5 @@
 import sys
+import argparse
 import os
 import subprocess
 import tempfile
@@ -6,7 +7,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
-# Importa o DatabaseManager do seu outro script
+# Importa o DatabaseManager
 try:
     from db_manager import DatabaseManager
 except ImportError:
@@ -210,4 +211,23 @@ def main():
 
 
 if __name__ == "__main__":
+    print('oi')
+    parser = argparse.ArgumentParser(description="Example CLI")
+    parser.add_argument(
+        "--project_dir",
+        type=str,
+        required=True,
+        help="Project directory"
+    )
+    parser.add_argument(
+        "--name",
+        type=str,
+        required=True,
+        help="Project name"
+    )
+
+
+    args = parser.parse_args()
+    print(args.project_dir)
+
     main()

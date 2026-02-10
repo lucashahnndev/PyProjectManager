@@ -67,6 +67,10 @@ goto :PARSE_ARGS_LOOP
 if not defined MODE ( goto :USAGE )
 if not defined ARG_PYTHON_EXE ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O parametro --python-exe e obrigatorio." & exit /b 1 )
 if not defined ARG_PROJECT_DIR ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O parametro --project-dir e obrigatorio." & exit /b 1 )
+if not defined ARG_VENV_NAME (
+    call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O parametro --venv deve receber o caminho completo do ambiente virtual (ex: C:\\...\\.venv)."
+    exit /b 1
+)
 cd /d "%ARG_PROJECT_DIR%"
 if "%MODE%"=="ENSURE_ENV" goto :MODE_ENSURE_ENV
 if "%MODE%"=="SHELL" goto :MODE_SHELL
@@ -107,7 +111,7 @@ goto :USAGE
     if !ERRORLEVEL! neq 0 ( exit /b 1 )
 
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A adicionar e instalar a dependencia: %ARG_PACKAGE%..."
-    "!ARG_VENV_NAME!\Scripts\pip.exe" install "%ARG_PACKAGE%"
+    "!ARG_VENV_NAME!\Scripts\python.exe" -m pip install "%ARG_PACKAGE%"
     if !ERRORLEVEL! neq 0 ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao instalar o pacote." & exit /b 1 )
 
     if exist "!ARG_DEPS_FILE!" (
@@ -118,7 +122,7 @@ goto :USAGE
     exit /b 0
 
 :MODE_REMOVE_DEP
-    "!ARG_VENV_NAME!\Scripts\pip.exe" uninstall "%ARG_PACKAGE%" -y
+    "!ARG_VENV_NAME!\Scripts\python.exe" -m pip uninstall "%ARG_PACKAGE%" -y
     if !ERRORLEVEL! equ 1 (
         call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "!ARG_PACKAGE! nao encontrada como instalada!"
     )
@@ -148,14 +152,14 @@ goto :USAGE
         call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A remover o ambiente virtual antigo..."
         rmdir /s /q "%ARG_VENV_NAME%"
     )
-    
+
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A limpar caches Python..."
     for /r %%i in (__pycache__) do if exist "%%i" rmdir /s /q "%%i"
     del /s /q *.pyc > nul 2>nul
 
 
     set "ARG_DEPS_INSTALLED_FLAG=False"
-    call :MODE_ENSURE_ENV 
+    call :MODE_ENSURE_ENV
     if !ERRORLEVEL! neq 0 ( exit /b 1 )
 
     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "Ambiente reconstruido com sucesso."
@@ -176,7 +180,7 @@ goto :USAGE
 :: ============================================================================
 
 :CREATE_VENV_AND_INSTALL
-    if not defined ARG_VENV_NAME ( exit /b 0 )
+    if not defined ARG_VENV_NAME ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O parametro --venv (caminho completo) e obrigatorio para este modo." & exit /b 1 )
     set "VENV_CREATED_NOW=false"
     if not exist "%ARG_VENV_NAME%" (
         call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A criar novo ambiente virtual em '%ARG_VENV_NAME%'..."
@@ -185,7 +189,7 @@ goto :USAGE
         if !ERRORLEVEL! neq 0 ( call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao criar o ambiente virtual." & exit /b 1 )
         set "VENV_CREATED_NOW=true"
         call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "!this_module!"  "A atualizar pip..."
-        "!ARG_VENV_NAME!\Scripts\pip.exe" install --upgrade pip
+        "!ARG_VENV_NAME!\Scripts\python.exe" -m pip install --upgrade pip
     )
     if "%NEEDS_INSTALL%"=="true" (
         if defined ARG_DEPS_FILE (
@@ -194,7 +198,7 @@ goto :USAGE
                 call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "INFO" "Isso acontecera apenas uma vez..."
                 set "PIP_OPTIONS="
                 if "%ARG_NO_CACHE%"=="true" set "PIP_OPTIONS=--no-cache-dir"
-                "!ARG_VENV_NAME!\Scripts\pip.exe" install %PIP_OPTIONS% -r "!ARG_DEPS_FILE!"
+                "!ARG_VENV_NAME!\Scripts\python.exe" -m pip install %PIP_OPTIONS% -r "!ARG_DEPS_FILE!"
                 if !ERRORLEVEL! neq 0 (
                     call "!LOG_UTIL_SCRIPT!" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "Ocorreram erros durante a instalacao das dependencias."
                     exit /b 1

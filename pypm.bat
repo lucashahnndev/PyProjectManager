@@ -14,7 +14,7 @@ set "PYPM_DIR=%~dp0"
 set "PYPM_SHELL_SRC=%PYPM_DIR%shell_src\"
 set "PYPM_PROJ_DIR=%PYPM_DIR%python_src\"
 set "DB_WORKER_SCRIPT=%PYPM_PROJ_DIR%\db_manager.py"
-set "INIT_WORKER_SCRIPT=%PYPM_PROJ_DIR%\init_worker.py"
+set "INIT_WORKER_SCRIPT=%PYPM_PROJ_DIR%init_project.py"
 set "CORE_RUNNER=%PYPM_SHELL_SRC%start_app_core.bat"
 set "LOG_UTIL_SCRIPT=%PYPM_SHELL_SRC%\log_util.bat"
 
@@ -130,7 +130,7 @@ goto :SUCCESS
 
     :: Chama o worker init_worker.py, passando quaisquer argumentos
     :: (ex: --name, --python) que o usuário possa ter fornecido.
-    call :RUN_PYPM_WORKER "%INIT_WORKER_SCRIPT%" %REMAINING_ARGS%
+    call :RUN_PYPM_WORKER "%INIT_WORKER_SCRIPT%" --project_dir="%ORIGINAL_DIR%" %REMAINING_ARGS%
     goto :SUCCESS
 
 :HANDLE_LIST

@@ -12,22 +12,22 @@ set "this_module=%~n0"
 set "pypm_shell_path=%~dp0"
 set "pypm_python_src_path=../%~dp0"
 
-:: Niveis de verbosidade 
+:: Niveis de verbosidade
 set "LOG_LEVEL_ERROR=0"
 set "LOG_LEVEL_WARN=1"
 set "LOG_LEVEL_INFO=2"
 set "LOG_LEVEL_DEBUG=3"
 
-:: Nivel padrao 
+:: Nivel padrao
 set "LOG_LEVEL_NUM=2"
 set "LOG_LEVEL_NAME=INFO"
 
-:: Variaveis do script 
+:: Variaveis do script
 set "COMMAND_MODE="
 set "NEW_LOG_LEVEL_FLAG="
 set "ARGS_FOR_CORE="
 
-:: Loop de pre-analise para encontrar flags de log 
+:: Loop de pre-analise para encontrar flags de log
 :PARSE_LOG_ARGS_LOOP
 if "%~1"=="" goto :PARSE_LOG_ARGS_END
 if /i "%~1"=="--quiet" ( set "NEW_LOG_LEVEL_FLAG=0" & shift & goto :PARSE_LOG_ARGS_LOOP )
@@ -75,7 +75,7 @@ if not exist "!CONFIG_FILE!" (
     pause & exit /b 1
 )
 
-:: Carrega configuracoes e PROCURA o nivel de log 
+:: Carrega configuracoes e PROCURA o nivel de log
 for /f "usebackq tokens=1,* delims==" %%a in ("%CONFIG_FILE%") do (
     set "%%a=%%b"
     if /i "%%a"=="LOG_LEVEL" set "LOG_LEVEL_NUM=%%b"
@@ -84,7 +84,7 @@ if exist "%LOCAL_CONFIG_FILE%" (
     for /f "usebackq tokens=1,* delims==" %%a in ("%LOCAL_CONFIG_FILE%") do (set "%%a=%%b")
 )
 
-:: APLICAR SOBRESCRITA DA FLAG (se existir) 
+:: APLICAR SOBRESCRITA DA FLAG (se existir)
 if defined NEW_LOG_LEVEL_FLAG (
     call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Log level sobrescrito pela flag: %NEW_LOG_LEVEL_FLAG%"
     set "LOG_LEVEL_NUM=%NEW_LOG_LEVEL_FLAG%"
@@ -107,10 +107,40 @@ call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "
 
 :: --- 5. DELEGAR a Preparacao do Ambiente ---
 call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "A preparar o ambiente de dependencias com o motor: %DEPENDENCY_ENGINEER%..."
-set "VENV_PATH=%CD%\%CONFIG_DIR%\%VENV%"
+
+:: Venv agora pode ser externa ao projeto. Se VENV_PATH estiver definido em .pypm\pypm.local, usamos ele.
+:: Fallback para compatibilidade: .pypm\<VENV> (legado).
+if defined VENV_PATH (
+    set "FINAL_VENV_PATH=%VENV_PATH%"
+) else (
+    set "FINAL_VENV_PATH=%CD%\%CONFIG_DIR%\%VENV%"
+)
+
+:: Se ainda nao existe VENV_PATH (primeira execucao), cria um path padrao user-scope e persiste em pypm.local.
+if not defined VENV_PATH (
+    if defined LOCALAPPDATA (
+        for %%I in ("%CD%") do set "PROJECT_ID=%%~nI"
+        set "PROJECT_ID=!PROJECT_ID: =_!"
+        set "FINAL_VENV_PATH=%LOCALAPPDATA%\pypm\venvs\pip_engine\!PROJECT_ID!\.venv"
+        if not exist "!LOCAL_CONFIG_FILE!" (
+            (
+                echo PYTHON_PATH=!FINAL_PYTHON_EXE!
+                echo deps_installed=!deps_installed!
+                echo VENV_PATH=!FINAL_VENV_PATH!
+            )>!LOCAL_CONFIG_FILE!
+        ) else (
+            findstr /b /i "VENV_PATH=" "!LOCAL_CONFIG_FILE!" >nul
+            if !ERRORLEVEL! neq 0 (
+                >>"!LOCAL_CONFIG_FILE!" echo VENV_PATH=!FINAL_VENV_PATH!
+            )
+        )
+    )
+)
+
 set "DEPS_FILE=%CD%\requirements.txt"
 
-if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" ( 
+
+if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" (
     call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "O executavel Python foi alterado. Reconstruindo o ambiente..."
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
         (
@@ -118,33 +148,34 @@ if /i "!PYTHON_PATH!" neq "!FINAL_PYTHON_EXE!" (
             echo EXEC_DIR=!EXEC_DIR!
             echo PROJECT_DIR=!PROJECT_DIR!
             echo deps_installed=False
+            echo VENV_PATH=!FINAL_VENV_PATH!
         )>!LOCAL_CONFIG_FILE!
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --log-level !LOG_LEVEL_NUM! --deps-file "!DEPS_FILE!" --no-cache
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!FINAL_VENV_PATH!" --log-level !LOG_LEVEL_NUM! --deps-file "!DEPS_FILE!" --no-cache
     ) else (
         rem logica para poetry
     )
 ) else if /i "%COMMAND_MODE%"=="--rebuild" (
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --log-level !LOG_LEVEL_NUM! --deps-file "!DEPS_FILE!" --no-cache
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --rebuild --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!FINAL_VENV_PATH!" --log-level !LOG_LEVEL_NUM! --deps-file "!DEPS_FILE!" --no-cache
     ) else (
         rem logica para poetry
     )
-) else if /i "%COMMAND_MODE%"=="--add-dep" ( 
+) else if /i "%COMMAND_MODE%"=="--add-dep" (
     rem Nao faz nada aqui, sera tratado na secao 6
-) else if /i "%COMMAND_MODE%"=="--remove-dep" ( 
+) else if /i "%COMMAND_MODE%"=="--remove-dep" (
     rem Nao faz nada aqui, sera tratado na secao 6
 )  else (
     rem Execucao padrao "smart"
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --ensure-env --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --deps-installed "!deps_installed!" --log-level !LOG_LEVEL_NUM!
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --ensure-env --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!FINAL_VENV_PATH!" --deps-file "!DEPS_FILE!" --deps-installed "!deps_installed!" --log-level !LOG_LEVEL_NUM!
     ) else (
         rem logica para poetry
     )
 )
 if !ERRORLEVEL! neq 0 ( call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Falha ao preparar o ambiente." & pause & exit /b 1 )
-call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Ambiente pronto." 
+call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Ambiente pronto."
 
-:: --- 6. Analisador de Comandos e Execucao --- 
+:: --- 6. Analisador de Comandos e Execucao ---
 call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Argumentos recebidos pelo core: %ARGS_FOR_CORE%"
 
 :: (Precisamos re-parsear os argumentos sem as flags de log)
@@ -164,7 +195,7 @@ if %LOG_LEVEL_NUM% GEQ 3 echo ==================================================
 
 if /i "%COMMAND_MODE%"=="--shell" (
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!dependency_manager_pip.bat" --shell --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --log-level !LOG_LEVEL_NUM!
+        call "!pypm_shell_path!dependency_manager_pip.bat" --shell --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!FINAL_VENV_PATH!" --log-level !LOG_LEVEL_NUM!
     ) else (
         rem logica para poetry
     )
@@ -174,7 +205,7 @@ if /i "%COMMAND_MODE%"=="--shell" (
 if /i "%COMMAND_MODE%"=="--add-dep" (
     if not defined COMMAND_ARGS ( call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O modo --add-dep requer um pacote para adicionar." & pause & exit /b 1 )
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-         call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --log-level !LOG_LEVEL_NUM! --add-dep "!COMMAND_ARGS!" 
+         call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!FINAL_VENV_PATH!" --deps-file "!DEPS_FILE!" --log-level !LOG_LEVEL_NUM! --add-dep "!COMMAND_ARGS!"
     ) else (
         rem logica para poetry
     )
@@ -184,7 +215,7 @@ if /i "%COMMAND_MODE%"=="--add-dep" (
 if /i "%COMMAND_MODE%"=="--remove-dep" (
     if not defined COMMAND_ARGS ( call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "O modo --remove-dep requer um pacote para adicionar." & pause & exit /b 1 )
     if /i "%DEPENDENCY_ENGINEER%"=="pip" (
-        call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!VENV_PATH!" --deps-file "!DEPS_FILE!" --log-level !LOG_LEVEL_NUM! --remove-dep "!COMMAND_ARGS!" 
+        call "!pypm_shell_path!\dependency_manager_pip.bat" --python-exe "!FINAL_PYTHON_EXE!" --project-dir "%CD%" --venv "!FINAL_VENV_PATH!" --deps-file "!DEPS_FILE!" --log-level !LOG_LEVEL_NUM! --remove-dep "!COMMAND_ARGS!"
     ) else (
          rem logica para poetry
     )
@@ -196,10 +227,10 @@ if /i "%COMMAND_MODE%"=="--python-shell" (
     "!FINAL_PYTHON_EXE!"
 ) else if /i "%COMMAND_MODE%"=="--run" (
     if /i "%COMMAND_ARGS%"=="" (
-        call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "Ambiente preparado. Nenhum comando de execucao fornecido." 
+        call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "WARN" "!this_module!"  "Ambiente preparado. Nenhum comando de execucao fornecido."
     ) else (
         call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "DEBUG" "!this_module!"  "Ambiente preparado. Executando comando --run %COMMAND_ARGS%..."
-        
+
         :: Reconstrói os argumentos restantes (tudo depois de --run)
         set "RUN_CMD="
         for %%a in (%ARGS_FOR_CORE%) do (
@@ -207,8 +238,16 @@ if /i "%COMMAND_MODE%"=="--python-shell" (
                 set "RUN_CMD=!RUN_CMD! %%a"
             )
         )
-        
-        "!FINAL_PYTHON_EXE!" !RUN_CMD!
+
+        set "VENV_PYTHON_EXE=!FINAL_VENV_PATH!\Scripts\python.exe"
+        if exist "!VENV_PYTHON_EXE!" (
+            set "PYTHON_TO_RUN=!VENV_PYTHON_EXE!"
+        ) else (
+            set "PYTHON_TO_RUN=!FINAL_PYTHON_EXE!"
+        )
+
+        "!PYTHON_TO_RUN!" !RUN_CMD!
+
     )
 ) else if /i not "%COMMAND_MODE%"=="--rebuild" (
     call "!pypm_shell_path!\log_util.bat" %LOG_LEVEL_NUM% "ERROR" "!this_module!"  "Comando desconhecido: %COMMAND_MODE%"
